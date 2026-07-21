@@ -1,0 +1,7 @@
+# Liste brute des infos/alertes a analyser par le module veille.
+# Une ligne par item. Remplace les exemples ci-dessous par tes propres
+# titres d'articles, alertes ou annonces (pas encore de scraping RSS
+# automatique : ce fichier est ta watchlist manuelle pour le moment).
+Exemple : Nouvel appel d'offres publie sur le marche public X
+Exemple : Annonce de recrutement urgent chez Y
+Exemple : Article generique sans lien avec ton activite

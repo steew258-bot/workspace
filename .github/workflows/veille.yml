@@ -1,0 +1,31 @@
+name: Veille quotidienne
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Run veille
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          SOURCES=$(grep -v '^#' docs/veille-sources.txt)
+          python app.py veille "$SOURCES" > veille-result.json
+      - name: Create issue with results
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Veille du $(date +%Y-%m-%d)" \
+            --body-file veille-result.json
