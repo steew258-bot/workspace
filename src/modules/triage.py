@@ -1,7 +1,8 @@
 import json
-import os
 
 import anthropic
+
+from src.modules._client import get_client
 
 SYSTEM_PROMPT = """Tu es un assistant de triage. Analyse le texte fourni (email, tache, \
 notification...) et reponds UNIQUEMENT avec un JSON valide, sans aucun texte autour, au format :
@@ -38,7 +39,7 @@ def _parse_response(raw_text: str) -> dict:
 
 
 def triage(text: str, client: anthropic.Anthropic | None = None) -> dict:
-    client = client or anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    client = client or get_client()
     response = client.messages.create(
         model=MODEL,
         max_tokens=500,
