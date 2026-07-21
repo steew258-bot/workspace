@@ -3,6 +3,7 @@ import json
 
 from src.modules.feeds import fetch_items_text
 from src.modules.planification import planification
+from src.modules.resume import resume
 from src.modules.triage import triage
 from src.modules.veille import veille
 
@@ -27,12 +28,22 @@ def main(argv=None):
     )
     plan_parser.add_argument("text", help="Taches et contraintes du jour")
 
+    resume_parser = subparsers.add_parser(
+        "resume", help="Resume un texte long en points cles"
+    )
+    resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
+
     args = parser.parse_args(argv)
 
     if args.command == "veille-feeds":
         result = veille(fetch_items_text(args.feeds_file))
     else:
-        handlers = {"triage": triage, "veille": veille, "planification": planification}
+        handlers = {
+            "triage": triage,
+            "veille": veille,
+            "planification": planification,
+            "resume": resume,
+        }
         result = handlers[args.command](args.text)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

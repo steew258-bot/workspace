@@ -16,6 +16,7 @@ from app import main
             "app.planification",
             {"ordre": ["a"], "tache_prioritaire": "a", "justification": "j"},
         ),
+        ("resume", "app.resume", {"resume": "r", "points_cles": ["a"]}),
     ],
 )
 def test_command_prints_json(capsys, command, target, fake_result):

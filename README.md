@@ -15,6 +15,8 @@ Voir [docs/Ops-Agent.pdf](docs/Ops-Agent.pdf) pour le cadrage complet du projet
   + archive
 - **planification** — tâches et contraintes du jour → ordre optimisé et
   tâche à plus fort levier
+- **resume** — texte long (compte-rendu, doc, fil d'emails) → résumé court
+  + points clés
 
 ## Installation
 
@@ -37,6 +39,7 @@ python app.py triage "Le client X demande un geste commercial avant vendredi"
 python app.py veille "$(cat docs/veille-sources.txt)"          # liste manuelle
 python app.py veille-feeds docs/veille-feeds.txt               # scraping RSS reel
 python app.py planification "Repondre a 3 clients, preparer un devis, relancer un impaye"
+python app.py resume "$(cat compte-rendu.txt)"
 ```
 
 Chaque commande affiche un JSON structuré sur stdout.
