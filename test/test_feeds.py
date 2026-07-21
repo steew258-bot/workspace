@@ -43,6 +43,15 @@ def test_fetch_items_invalid_feed_raises():
         fetch_items(["pas un flux du tout, juste du texte"])
 
 
+def test_fetch_items_skips_broken_feed_but_continues():
+    items = fetch_items([SAMPLE_RSS, "pas un flux valide", EMPTY_RSS])
+    assert items == [
+        "[Flux Test] Premier article",
+        "[Flux Test] Deuxieme article",
+        "[Flux Test] Troisieme article",
+    ]
+
+
 def test_parse_feeds_file_skips_comments_and_blanks(tmp_path):
     feeds_file = tmp_path / "feeds.txt"
     feeds_file.write_text(

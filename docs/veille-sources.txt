@@ -1,7 +1,7 @@
-# Liste brute des infos/alertes a analyser par le module veille.
-# Une ligne par item. Pas encore de scraping RSS automatique : ce fichier
-# est ta watchlist manuelle, a rafraichir toi-meme periodiquement avec
-# des items reels (le cron quotidien classe tel quel ce qui s'y trouve).
+# Liste brute des infos/alertes pour un usage manuel/ad-hoc de `veille`
+# (le cron quotidien utilise desormais `veille-feeds` sur
+# docs/veille-feeds.txt, pas ce fichier). Une ligne par item, a
+# rafraichir toi-meme periodiquement si tu veux t'en servir a la main.
 # Derniere mise a jour manuelle : 2026-07-21 (axes : veille tech/IA + concurrence/marche)
 GitHub Models sera retire le 30 juillet 2026, impact sur les workflows bases sur agents de code
 GitHub Copilot ajoute Kimi K2.7 Code (GA) et un mode agent session streaming en preview public
