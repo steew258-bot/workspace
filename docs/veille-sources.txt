@@ -1,7 +1,12 @@
 # Liste brute des infos/alertes a analyser par le module veille.
-# Une ligne par item. Remplace les exemples ci-dessous par tes propres
-# titres d'articles, alertes ou annonces (pas encore de scraping RSS
-# automatique : ce fichier est ta watchlist manuelle pour le moment).
-Exemple : Nouvel appel d'offres publie sur le marche public X
-Exemple : Annonce de recrutement urgent chez Y
-Exemple : Article generique sans lien avec ton activite
+# Une ligne par item. Pas encore de scraping RSS automatique : ce fichier
+# est ta watchlist manuelle, a rafraichir toi-meme periodiquement avec
+# des items reels (le cron quotidien classe tel quel ce qui s'y trouve).
+# Derniere mise a jour manuelle : 2026-07-21 (axes : veille tech/IA + concurrence/marche)
+GitHub Models sera retire le 30 juillet 2026, impact sur les workflows bases sur agents de code
+GitHub Copilot ajoute Kimi K2.7 Code (GA) et un mode agent session streaming en preview public
+Anthropic redeploie ses modeles agentiques et lance un science workbench (juillet 2026)
+Lindy, concurrent direct sur l'automatisation cross-app (email, agenda, reunions), facture de 49,99$ a 199,99$/mois
+Google Gemini lance Personal Intelligence : contexte tire de Gmail/Photos/YouTube/Search pour des reponses hyper-personnalisees
+ChatGPT integre Operator nativement (navigation web, analyse de donnees, taches multi-etapes) avec GPT-5.4
+Hausse au S1 2026 des attaques automatisees multi-etapes pilotees par des agents IA, sujet a surveiller cote securite
