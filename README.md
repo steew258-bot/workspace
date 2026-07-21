@@ -34,7 +34,8 @@ export ANTHROPIC_API_KEY=sk-...   # ou set sur Windows
 
 ```bash
 python app.py triage "Le client X demande un geste commercial avant vendredi"
-python app.py veille "$(cat docs/veille-sources.txt)"
+python app.py veille "$(cat docs/veille-sources.txt)"          # liste manuelle
+python app.py veille-feeds docs/veille-feeds.txt               # scraping RSS reel
 python app.py planification "Repondre a 3 clients, preparer un devis, relancer un impaye"
 ```
 
@@ -42,10 +43,10 @@ Chaque commande affiche un JSON structuré sur stdout.
 
 ## Automatisation
 
-`.github/workflows/veille.yml` exécute le module `veille` chaque jour à 7h
-UTC sur le contenu de `docs/veille-sources.txt` (watchlist manuelle pour
-l'instant, pas encore de scraping RSS automatique) et ouvre une issue
-GitHub avec les résultats. Nécessite le secret de repo
+`.github/workflows/veille.yml` exécute chaque jour à 7h UTC
+`veille-feeds` sur les flux RSS listés dans `docs/veille-feeds.txt`
+(scraping réel, pas de watchlist manuelle à maintenir) et ouvre une
+issue GitHub avec les résultats. Nécessite le secret de repo
 `ANTHROPIC_API_KEY`.
 
 ## Développement

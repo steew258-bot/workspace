@@ -20,8 +20,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          SOURCES=$(grep -v '^#' docs/veille-sources.txt)
-          python app.py veille "$SOURCES" > veille-result.json
+          python app.py veille-feeds docs/veille-feeds.txt > veille-result.json
       - name: Create issue with results
         env:
           GH_TOKEN: ${{ github.token }}

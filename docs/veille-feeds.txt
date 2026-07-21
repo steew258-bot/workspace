@@ -1,0 +1,8 @@
+# Flux RSS/Atom a recuperer par `python app.py veille-feeds`.
+# Une URL par ligne, `#` pour commenter/desactiver une ligne.
+# Axes actuels : veille tech/IA + concurrence/marche. Ajuste librement.
+https://hnrss.org/frontpage
+https://techcrunch.com/category/artificial-intelligence/feed/
+https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+https://venturebeat.com/category/ai/feed/
+https://www.technologyreview.com/topic/artificial-intelligence/feed

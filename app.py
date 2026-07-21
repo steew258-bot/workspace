@@ -1,6 +1,7 @@
 import argparse
 import json
 
+from src.modules.feeds import fetch_items_text
 from src.modules.planification import planification
 from src.modules.triage import triage
 from src.modules.veille import veille
@@ -16,6 +17,11 @@ def main(argv=None):
     veille_parser = subparsers.add_parser("veille", help="Priorise une liste d'infos/alertes")
     veille_parser.add_argument("text", help="Liste brute d'infos/alertes (une par ligne)")
 
+    feeds_parser = subparsers.add_parser(
+        "veille-feeds", help="Recupere des flux RSS et priorise le resultat avec veille"
+    )
+    feeds_parser.add_argument("feeds_file", help="Fichier avec une URL de flux RSS par ligne")
+
     plan_parser = subparsers.add_parser(
         "planification", help="Priorise les taches et contraintes du jour"
     )
@@ -23,8 +29,11 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
-    handlers = {"triage": triage, "veille": veille, "planification": planification}
-    result = handlers[args.command](args.text)
+    if args.command == "veille-feeds":
+        result = veille(fetch_items_text(args.feeds_file))
+    else:
+        handlers = {"triage": triage, "veille": veille, "planification": planification}
+        result = handlers[args.command](args.text)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
