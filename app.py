@@ -6,6 +6,7 @@ from src.modules.planification import planification
 from src.modules.resume import resume
 from src.modules.triage import triage
 from src.modules.veille import veille
+from src.modules.whatsapp import send_whatsapp_message
 
 
 def main(argv=None):
@@ -33,10 +34,18 @@ def main(argv=None):
     )
     resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
 
+    whatsapp_parser = subparsers.add_parser(
+        "whatsapp", help="Envoie un message WhatsApp via l'API Cloud de Meta"
+    )
+    whatsapp_parser.add_argument("to", help="Numero destinataire (format E.164, ex: +33600000000)")
+    whatsapp_parser.add_argument("message", help="Contenu du message a envoyer")
+
     args = parser.parse_args(argv)
 
     if args.command == "veille-feeds":
         result = veille(fetch_items_text(args.feeds_file))
+    elif args.command == "whatsapp":
+        result = send_whatsapp_message(args.to, args.message)
     else:
         handlers = {
             "triage": triage,
