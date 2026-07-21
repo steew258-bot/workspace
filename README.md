@@ -48,9 +48,51 @@ python app.py veille "$(cat docs/veille-sources.txt)"          # liste manuelle
 python app.py veille-feeds docs/veille-feeds.txt               # scraping RSS reel
 python app.py planification "Repondre a 3 clients, preparer un devis, relancer un impaye"
 python app.py resume "$(cat compte-rendu.txt)"
+python app.py whatsapp +33600000000 "Message a envoyer"
 ```
 
 Chaque commande affiche un JSON structuré sur stdout.
+
+## WhatsApp
+
+Intégration avec l'API WhatsApp Cloud de Meta, dans les deux sens.
+
+### Envoi (sortant)
+
+```bash
+python app.py whatsapp <numero_E.164> "message"
+```
+
+Nécessite dans `.env` :
+
+- `WHATSAPP_API_URL` (ex: `https://graph.facebook.com/v20.0`)
+- `WHATSAPP_PHONE_NUMBER_ID`
+- `WHATSAPP_ACCESS_TOKEN`
+
+### Réception (webhook entrant)
+
+```bash
+python app.py webhook --port 8000
+```
+
+Démarre un serveur qui reçoit les messages WhatsApp entrants, les passe
+au module `triage`, et renvoie le résultat (action, urgence, brouillon
+de réponse) à l'expéditeur via WhatsApp.
+
+Nécessite en plus dans `.env` :
+
+- `WHATSAPP_VERIFY_TOKEN` — valeur choisie par toi, à renseigner aussi
+  côté config du webhook dans le dashboard Meta (handshake de
+  vérification).
+- `WHATSAPP_APP_SECRET` — utilisé pour vérifier la signature des
+  requêtes entrantes (`X-Hub-Signature-256`). Optionnel mais fortement
+  recommandé : sans lui, n'importe qui connaissant l'URL peut poster de
+  faux messages sur le webhook.
+
+Pour tester en local, le serveur doit être joignable depuis internet
+(Meta appelle ton webhook) — utiliser un tunnel type `ngrok http 8000`
+et renseigner l'URL publique + le verify token dans le dashboard
+Meta (WhatsApp > Configuration > Webhook).
 
 ## Automatisation
 

@@ -40,7 +40,20 @@ def main(argv=None):
     whatsapp_parser.add_argument("to", help="Numero destinataire (format E.164, ex: +33600000000)")
     whatsapp_parser.add_argument("message", help="Contenu du message a envoyer")
 
+    webhook_parser = subparsers.add_parser(
+        "webhook", help="Demarre le serveur qui recoit les messages WhatsApp entrants"
+    )
+    webhook_parser.add_argument(
+        "--port", type=int, default=8000, help="Port d'ecoute (defaut: 8000)"
+    )
+
     args = parser.parse_args(argv)
+
+    if args.command == "webhook":
+        from src.webhook import run as run_webhook
+
+        run_webhook(port=args.port)
+        return
 
     if args.command == "veille-feeds":
         result = veille(fetch_items_text(args.feeds_file))
