@@ -4,9 +4,6 @@ Assistant IA personnel modulaire : chaque tâche du quotidien (triage, veille,
 planification) est un module avec un contrat d'entrée/sortie strict (JSON
 structuré) et un test qui vérifie sa fiabilité, comme du vrai logiciel.
 
-Voir [docs/Ops-Agent.pdf](docs/Ops-Agent.pdf) pour le cadrage complet du projet
-(concept, monétisation, plan d'action).
-
 ## Modules
 
 - **triage** — texte libre (email, tâche, notification) → action à
