@@ -94,6 +94,19 @@ Pour tester en local, le serveur doit être joignable depuis internet
 et renseigner l'URL publique + le verify token dans le dashboard
 Meta (WhatsApp > Configuration > Webhook).
 
+### Notifications proactives (sortant automatique)
+
+Si `WHATSAPP_NOTIFY_TO` est défini dans `.env`, les commandes `triage`,
+`veille` et `veille-feeds` envoient automatiquement un WhatsApp à ce
+numéro quand le résultat est jugé important :
+
+- `triage` : urgence `"haute"`
+- `veille` / `veille-feeds` : au moins un élément dans `a_traiter`
+
+Sans `WHATSAPP_NOTIFY_TO`, ce comportement est inactif (rien ne change).
+Un échec d'envoi de notification n'interrompt jamais la commande — il
+est juste signalé sur stderr.
+
 ## Automatisation
 
 `.github/workflows/veille.yml` exécute chaque jour à 7h UTC

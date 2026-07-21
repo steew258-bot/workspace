@@ -7,6 +7,7 @@ from src.modules.resume import resume
 from src.modules.triage import triage
 from src.modules.veille import veille
 from src.modules.whatsapp import send_whatsapp_message
+from src.notifications import notify_if_urgent
 
 
 def main(argv=None):
@@ -57,6 +58,7 @@ def main(argv=None):
 
     if args.command == "veille-feeds":
         result = veille(fetch_items_text(args.feeds_file))
+        notify_if_urgent("veille-feeds", result)
     elif args.command == "whatsapp":
         result = send_whatsapp_message(args.to, args.message)
     else:
@@ -67,6 +69,7 @@ def main(argv=None):
             "resume": resume,
         }
         result = handlers[args.command](args.text)
+        notify_if_urgent(args.command, result)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
