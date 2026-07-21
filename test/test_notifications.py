@@ -14,6 +14,7 @@ def test_no_notify_target_does_nothing(monkeypatch):
 
 def test_triage_haute_urgence_notifies(monkeypatch):
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
 
     result = {"action": "Repondre", "urgence": "haute", "brouillon_reponse": "Bonjour"}
     with patch("src.notifications.send_whatsapp_message") as mocked_send:
@@ -27,6 +28,7 @@ def test_triage_haute_urgence_notifies(monkeypatch):
 
 def test_triage_basse_urgence_does_not_notify(monkeypatch):
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
 
     result = {"action": "Repondre", "urgence": "basse", "brouillon_reponse": "Bonjour"}
     with patch("src.notifications.send_whatsapp_message") as mocked_send:
@@ -37,6 +39,7 @@ def test_triage_basse_urgence_does_not_notify(monkeypatch):
 
 def test_veille_with_items_notifies(monkeypatch):
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
 
     result = {
         "a_traiter": [{"titre": "Incident X", "raison": "Impact client"}],
@@ -52,6 +55,7 @@ def test_veille_with_items_notifies(monkeypatch):
 
 def test_veille_feeds_treated_like_veille(monkeypatch):
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
 
     result = {"a_traiter": [{"titre": "T", "raison": "R"}], "archive": []}
     with patch("src.notifications.send_whatsapp_message") as mocked_send:
@@ -62,6 +66,7 @@ def test_veille_feeds_treated_like_veille(monkeypatch):
 
 def test_veille_without_items_does_not_notify(monkeypatch):
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
 
     result = {"a_traiter": [], "archive": ["x"]}
     with patch("src.notifications.send_whatsapp_message") as mocked_send:
@@ -74,6 +79,40 @@ def test_send_failure_is_swallowed(monkeypatch):
     from src.modules.whatsapp import WhatsAppError
 
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
 
     with patch("src.notifications.send_whatsapp_message", side_effect=WhatsAppError("boom")):
         notify_if_urgent("triage", {"urgence": "haute", "action": "a", "brouillon_reponse": "b"})
+
+
+def test_uses_template_when_configured(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TEMPLATE", "notification_urgente")
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TEMPLATE_LANG", "en_US")
+
+    result = {"action": "Repondre", "urgence": "haute", "brouillon_reponse": "Bonjour"}
+    with (
+        patch("src.notifications.send_whatsapp_template") as mocked_template,
+        patch("src.notifications.send_whatsapp_message") as mocked_message,
+    ):
+        notify_if_urgent("triage", result)
+
+    mocked_message.assert_not_called()
+    mocked_template.assert_called_once()
+    args, kwargs = mocked_template.call_args
+    assert args[0] == "+33600000000"
+    assert args[1] == "notification_urgente"
+    assert args[2] == "en_US"
+    assert "Repondre" in kwargs["body_params"][0]
+
+
+def test_template_default_language_is_fr(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TEMPLATE", "notification_urgente")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE_LANG", raising=False)
+
+    result = {"a_traiter": [{"titre": "T", "raison": "R"}], "archive": []}
+    with patch("src.notifications.send_whatsapp_template") as mocked_template:
+        notify_if_urgent("veille", result)
+
+    assert mocked_template.call_args[0][2] == "fr"

@@ -31,16 +31,10 @@ def _get_config() -> tuple[str, str, str]:
     )
 
 
-def send_whatsapp_message(to: str, message: str) -> dict:
+def _send_payload(payload: dict) -> dict:
     api_url, phone_number_id, access_token = _get_config()
 
     url = f"{api_url.rstrip('/')}/{phone_number_id}/messages"
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "type": "text",
-        "text": {"body": message},
-    }
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
@@ -61,3 +55,36 @@ def send_whatsapp_message(to: str, message: str) -> dict:
         raise WhatsAppError(f"Echec de l'envoi WhatsApp: {exc.reason}") from exc
 
     return json.loads(body)
+
+
+def send_whatsapp_message(to: str, message: str) -> dict:
+    return _send_payload(
+        {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "type": "text",
+            "text": {"body": message},
+        }
+    )
+
+
+def send_whatsapp_template(
+    to: str,
+    template_name: str,
+    language_code: str = "fr",
+    body_params: list[str] | None = None,
+) -> dict:
+    template = {"name": template_name, "language": {"code": language_code}}
+    if body_params:
+        template["components"] = [
+            {"type": "body", "parameters": [{"type": "text", "text": p} for p in body_params]}
+        ]
+
+    return _send_payload(
+        {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "type": "template",
+            "template": template,
+        }
+    )

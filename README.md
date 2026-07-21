@@ -75,9 +75,10 @@ Nécessite dans `.env` :
 python app.py webhook --port 8000
 ```
 
-Démarre un serveur qui reçoit les messages WhatsApp entrants, les passe
-au module `triage`, et renvoie le résultat (action, urgence, brouillon
-de réponse) à l'expéditeur via WhatsApp.
+Démarre un serveur (WSGI de production, `waitress`) qui reçoit les
+messages WhatsApp entrants, les passe au module `triage`, et renvoie le
+résultat (action, urgence, brouillon de réponse) à l'expéditeur via
+WhatsApp.
 
 Nécessite en plus dans `.env` :
 
@@ -106,6 +107,18 @@ numéro quand le résultat est jugé important :
 Sans `WHATSAPP_NOTIFY_TO`, ce comportement est inactif (rien ne change).
 Un échec d'envoi de notification n'interrompt jamais la commande — il
 est juste signalé sur stderr.
+
+⚠️ WhatsApp interdit l'envoi de texte libre à quelqu'un qui ne t'a pas
+écrit dans les dernières 24h ("customer service window"). Pour des
+notifications proactives fiables au-delà de cette fenêtre, crée un
+[message template](https://business.facebook.com/wa/manage/message-templates/)
+approuvé par Meta (une seule variable texte dans le corps) et renseigne :
+
+- `WHATSAPP_NOTIFY_TEMPLATE` — le nom du template
+- `WHATSAPP_NOTIFY_TEMPLATE_LANG` — son code langue (défaut `fr`)
+
+Le contenu de la notification est alors envoyé comme variable du
+template au lieu d'un message texte libre.
 
 ## Automatisation
 

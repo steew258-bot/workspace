@@ -1,19 +1,32 @@
 import os
 import sys
 
-from src.modules.whatsapp import WhatsAppError, send_whatsapp_message
+from src.modules.whatsapp import WhatsAppError, send_whatsapp_message, send_whatsapp_template
 
 
 def _notify_target() -> str | None:
     return os.environ.get("WHATSAPP_NOTIFY_TO")
 
 
+def _notify_template() -> tuple[str, str] | None:
+    template_name = os.environ.get("WHATSAPP_NOTIFY_TEMPLATE")
+    if not template_name:
+        return None
+    return template_name, os.environ.get("WHATSAPP_NOTIFY_TEMPLATE_LANG", "fr")
+
+
 def _send(message: str) -> None:
     to = _notify_target()
     if not to:
         return
+
+    template = _notify_template()
     try:
-        send_whatsapp_message(to, message)
+        if template:
+            template_name, language_code = template
+            send_whatsapp_template(to, template_name, language_code, body_params=[message])
+        else:
+            send_whatsapp_message(to, message)
     except WhatsAppError as exc:
         print(f"[notify] echec de l'envoi de la notification WhatsApp: {exc}", file=sys.stderr)
 

@@ -98,4 +98,6 @@ def receive():
 
 def run(host: str = "0.0.0.0", port: int = 8000) -> None:
     _verify_token()
-    app.run(host=host, port=port)
+    from waitress import serve
+
+    serve(app, host=host, port=port)
