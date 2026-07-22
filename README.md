@@ -14,6 +14,9 @@ structuré) et un test qui vérifie sa fiabilité, comme du vrai logiciel.
   tâche à plus fort levier
 - **resume** — texte long (compte-rendu, doc, fil d'emails) → résumé court
   + points clés
+- **email** — email (expéditeur/objet/corps) → urgence, action, brouillon
+  de réponse ; connecté en réel à une boîte mail (lecture IMAP des non-lus,
+  envoi SMTP)
 
 ## Prérequis
 
@@ -48,10 +51,64 @@ python app.py veille "$(cat docs/veille-sources.txt)"          # liste manuelle
 python app.py veille-feeds docs/veille-feeds.txt               # scraping RSS reel
 python app.py planification "Repondre a 3 clients, preparer un devis, relancer un impaye"
 python app.py resume "$(cat compte-rendu.txt)"
+python app.py email "De: client@exemple.com\nObjet: Urgent\n\nMerci de rappeler avant 18h."
+python app.py email-check
+python app.py email-send client@exemple.com "Re: Urgent" "C'est note, je vous rappelle."
 python app.py whatsapp +33600000000 "Message a envoyer"
 ```
 
 Chaque commande affiche un JSON structuré sur stdout.
+
+## Email
+
+Intégration réelle avec une boîte mail (IMAP en lecture, SMTP en envoi),
+sans dépendance externe (uniquement la bibliothèque standard Python).
+
+### Analyse manuelle
+
+```bash
+python app.py email "De: ...\nObjet: ...\n\n<corps>"
+```
+
+Renvoie `urgence`, `necessite_reponse`, `action` et `brouillon_reponse`.
+
+### Lecture automatique (`email-check`)
+
+```bash
+python app.py email-check [--mailbox INBOX] [--max 10]
+```
+
+Récupère les emails non lus par IMAP, les passe un par un au module
+d'analyse, puis marque comme lus uniquement ceux traités avec succès (un
+échec d'analyse sur un message ne fait pas perdre les autres, et le
+message en échec reste non lu pour un prochain passage). C'est le pendant
+de `veille-feeds` pour les emails : peut être automatisé de la même façon
+(cron, GitHub Actions).
+
+### Envoi (`email-send`)
+
+```bash
+python app.py email-send <destinataire> "<objet>" "<corps>"
+```
+
+Nécessite dans `.env` :
+
+- `EMAIL_IMAP_HOST`, `EMAIL_IMAP_PORT` (défaut `993`) — pour `email-check`
+- `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` (défaut `587`) — pour `email-send`
+- `EMAIL_ADDRESS`, `EMAIL_PASSWORD`
+- `EMAIL_MAILBOX` (défaut `INBOX`)
+
+⚠️ Utiliser un **mot de passe d'application** (Gmail, Outlook...), jamais
+le mot de passe principal du compte, et activer l'accès IMAP côté
+fournisseur. La connexion IMAP se fait en SSL et l'envoi SMTP en
+STARTTLS.
+
+### Notifications proactives
+
+Comme `triage`/`veille`, les commandes `email` (urgence `"haute"`) et
+`email-check` (au moins un message à `"haute"` urgence parmi les traités)
+déclenchent une notification WhatsApp proactive si `WHATSAPP_NOTIFY_TO`
+est défini (voir section WhatsApp ci-dessous).
 
 ## WhatsApp
 

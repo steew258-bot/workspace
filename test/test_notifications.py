@@ -75,6 +75,71 @@ def test_veille_without_items_does_not_notify(monkeypatch):
     mocked_send.assert_not_called()
 
 
+def test_email_haute_urgence_notifies(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "urgence": "haute",
+        "necessite_reponse": True,
+        "action": "Rappeler",
+        "brouillon_reponse": "Bonjour",
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("email", result)
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert args[0] == "+33600000000"
+    assert "Rappeler" in args[1]
+
+
+def test_email_basse_urgence_does_not_notify(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "urgence": "basse",
+        "necessite_reponse": False,
+        "action": "Archiver",
+        "brouillon_reponse": "",
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("email", result)
+
+    mocked_send.assert_not_called()
+
+
+def test_email_check_with_urgent_item_notifies(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "traites": [
+            {"de": "client@exemple.com", "objet": "Urgent", "urgence": "haute"},
+            {"de": "autre@exemple.com", "objet": "Info", "urgence": "basse"},
+        ]
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("email-check", result)
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "Urgent" in args[1]
+    assert "client@exemple.com" in args[1]
+
+
+def test_email_check_without_urgent_item_does_not_notify(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {"traites": [{"de": "autre@exemple.com", "objet": "Info", "urgence": "basse"}]}
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("email-check", result)
+
+    mocked_send.assert_not_called()
+
+
 def test_send_failure_is_swallowed(monkeypatch):
     from src.modules.whatsapp import WhatsAppError
 

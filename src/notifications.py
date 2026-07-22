@@ -32,9 +32,10 @@ def _send(message: str) -> None:
 
 
 def notify_if_urgent(command: str, result: dict) -> None:
-    if command == "triage" and result.get("urgence") == "haute":
+    if command in ("triage", "email") and result.get("urgence") == "haute":
+        label = "Triage" if command == "triage" else "Email"
         _send(
-            "Triage urgent\n"
+            f"{label} urgent\n"
             f"Action : {result.get('action', '')}\n"
             f"Suggestion : {result.get('brouillon_reponse', '')}"
         )
@@ -44,3 +45,10 @@ def notify_if_urgent(command: str, result: dict) -> None:
             f"- {item.get('titre', '')} ({item.get('raison', '')})" for item in items
         )
         _send(f"Veille : {len(items)} element(s) prioritaire(s)\n{lignes}")
+    elif command == "email-check":
+        urgents = [item for item in result.get("traites", []) if item.get("urgence") == "haute"]
+        if urgents:
+            lignes = "\n".join(
+                f"- {item.get('objet', '')} ({item.get('de', '')})" for item in urgents
+            )
+            _send(f"Email : {len(urgents)} message(s) urgent(s)\n{lignes}")

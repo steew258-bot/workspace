@@ -1,6 +1,11 @@
 import argparse
 import json
+import os
+import sys
 
+from src.modules.email import EmailError
+from src.modules.email import email as email_triage
+from src.modules.email_client import fetch_unread, mark_as_read, send_email
 from src.modules.feeds import fetch_items_text
 from src.modules.planification import planification
 from src.modules.resume import resume
@@ -35,6 +40,26 @@ def main(argv=None):
     )
     resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
 
+    email_parser = subparsers.add_parser(
+        "email", help="Analyse un email brut (expediteur/objet/corps) et propose une action"
+    )
+    email_parser.add_argument("text", help="Texte brut de l'email (expediteur, objet, corps)")
+
+    email_check_parser = subparsers.add_parser(
+        "email-check", help="Recupere les emails non lus par IMAP et les triage automatiquement"
+    )
+    email_check_parser.add_argument(
+        "--mailbox", default=None, help="Boite a lire (defaut: EMAIL_MAILBOX ou INBOX)"
+    )
+    email_check_parser.add_argument(
+        "--max", type=int, default=10, help="Nombre max de messages a traiter (defaut: 10)"
+    )
+
+    email_send_parser = subparsers.add_parser("email-send", help="Envoie un email via SMTP")
+    email_send_parser.add_argument("to", help="Adresse email destinataire")
+    email_send_parser.add_argument("subject", help="Objet de l'email")
+    email_send_parser.add_argument("body", help="Corps de l'email")
+
     whatsapp_parser = subparsers.add_parser(
         "whatsapp", help="Envoie un message WhatsApp via l'API Cloud de Meta"
     )
@@ -61,9 +86,34 @@ def main(argv=None):
         notify_if_urgent("veille-feeds", result)
     elif args.command == "whatsapp":
         result = send_whatsapp_message(args.to, args.message)
+    elif args.command == "email-send":
+        send_email(args.to, args.subject, args.body)
+        result = {"statut": "envoye", "to": args.to, "objet": args.subject}
+    elif args.command == "email-check":
+        mailbox = args.mailbox or os.environ.get("EMAIL_MAILBOX", "INBOX")
+        messages = fetch_unread(mailbox=mailbox, max_messages=args.max)
+        traites = []
+        processed_uids = []
+        for message in messages:
+            text = f"De: {message['de']}\nObjet: {message['objet']}\n\n{message['corps']}"
+            try:
+                analyse = email_triage(text)
+            except EmailError as exc:
+                print(
+                    f"[email-check] echec de l'analyse pour {message['uid']}: {exc}",
+                    file=sys.stderr,
+                )
+                continue
+            traites.append({"de": message["de"], "objet": message["objet"], **analyse})
+            processed_uids.append(message["uid"])
+        if processed_uids:
+            mark_as_read(processed_uids, mailbox=mailbox)
+        result = {"traites": traites}
+        notify_if_urgent("email-check", result)
     else:
         handlers = {
             "triage": triage,
+            "email": email_triage,
             "veille": veille,
             "planification": planification,
             "resume": resume,
