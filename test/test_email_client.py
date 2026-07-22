@@ -54,6 +54,24 @@ def test_fetch_unread_parses_messages(monkeypatch):
     fake_connection.logout.assert_called_once()
 
 
+def test_fetch_unread_empty_port_env_var_falls_back_to_default(monkeypatch):
+    monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.exemple.com")
+    monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
+    monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+    monkeypatch.setenv("EMAIL_IMAP_PORT", "")
+
+    fake_connection = MagicMock()
+    fake_connection.search.return_value = ("OK", [b""])
+
+    with patch(
+        "src.modules.email_client.imaplib.IMAP4_SSL", return_value=fake_connection
+    ) as mocked_ssl:
+        fetch_unread()
+
+    assert mocked_ssl.call_args.kwargs["timeout"] == 10
+    assert mocked_ssl.call_args.args == ("imap.exemple.com", 993)
+
+
 def test_fetch_unread_html_only_message_extracts_text(monkeypatch):
     monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.exemple.com")
     monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
@@ -75,6 +93,29 @@ def test_fetch_unread_html_only_message_extracts_text(monkeypatch):
     assert "-20%" in messages[0]["corps"]
     assert "<p>" not in messages[0]["corps"]
     assert "<b>" not in messages[0]["corps"]
+
+
+def test_fetch_unread_html_message_strips_style_block_content(monkeypatch):
+    monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.exemple.com")
+    monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
+    monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+
+    html = "<style>.promo { color: red; font-size: 20px; }</style><p>Bonjour le monde.</p>"
+    msg = EmailMessage()
+    msg["From"] = "newsletter@exemple.com"
+    msg["Subject"] = "Newsletter"
+    msg.set_content(html, subtype="html")
+
+    fake_connection = MagicMock()
+    fake_connection.search.return_value = ("OK", [b"1"])
+    fake_connection.fetch.return_value = ("OK", [(b"1 (RFC822 {123}", msg.as_bytes())])
+
+    with patch("src.modules.email_client.imaplib.IMAP4_SSL", return_value=fake_connection):
+        messages = fetch_unread()
+
+    assert "Bonjour le monde" in messages[0]["corps"]
+    assert "color: red" not in messages[0]["corps"]
+    assert "font-size" not in messages[0]["corps"]
 
 
 def test_fetch_unread_skips_unparsable_message_and_continues(monkeypatch):
@@ -154,6 +195,23 @@ def test_send_email_success(monkeypatch):
     fake_connection.starttls.assert_called_once()
     fake_connection.login.assert_called_once_with("moi@exemple.com", "secret")
     fake_connection.send_message.assert_called_once()
+
+
+def test_send_email_empty_port_env_var_falls_back_to_default(monkeypatch):
+    monkeypatch.setenv("EMAIL_SMTP_HOST", "smtp.exemple.com")
+    monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
+    monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+    monkeypatch.setenv("EMAIL_SMTP_PORT", "")
+
+    fake_connection = MagicMock()
+    fake_connection.__enter__.return_value = fake_connection
+
+    with patch(
+        "src.modules.email_client.smtplib.SMTP", return_value=fake_connection
+    ) as mocked_smtp:
+        send_email("client@exemple.com", "Sujet", "Corps")
+
+    assert mocked_smtp.call_args.args == ("smtp.exemple.com", 587)
 
 
 def test_send_email_smtp_error_raises_client_error(monkeypatch):

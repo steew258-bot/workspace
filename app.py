@@ -3,9 +3,8 @@ import json
 import os
 import sys
 
-from src.modules.email import EmailError
 from src.modules.email import email as email_triage
-from src.modules.email_client import fetch_unread, mark_as_read, send_email
+from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
 from src.modules.feeds import fetch_items_text
 from src.modules.planification import planification
 from src.modules.resume import resume
@@ -90,7 +89,7 @@ def main(argv=None):
         send_email(args.to, args.subject, args.body)
         result = {"statut": "envoye", "to": args.to, "objet": args.subject}
     elif args.command == "email-check":
-        mailbox = args.mailbox or os.environ.get("EMAIL_MAILBOX", "INBOX")
+        mailbox = args.mailbox or os.environ.get("EMAIL_MAILBOX") or "INBOX"
         messages = fetch_unread(mailbox=mailbox, max_messages=args.max)
         traites = []
         processed_uids = []
@@ -98,7 +97,7 @@ def main(argv=None):
             text = f"De: {message['de']}\nObjet: {message['objet']}\n\n{message['corps']}"
             try:
                 analyse = email_triage(text)
-            except EmailError as exc:
+            except Exception as exc:
                 print(
                     f"[email-check] echec de l'analyse pour {message['uid']}: {exc}",
                     file=sys.stderr,
@@ -106,10 +105,13 @@ def main(argv=None):
                 continue
             traites.append({"de": message["de"], "objet": message["objet"], **analyse})
             processed_uids.append(message["uid"])
-        if processed_uids:
-            mark_as_read(processed_uids, mailbox=mailbox)
         result = {"traites": traites}
         notify_if_urgent("email-check", result)
+        if processed_uids:
+            try:
+                mark_as_read(processed_uids, mailbox=mailbox)
+            except EmailClientError as exc:
+                print(f"[email-check] echec du marquage comme lu: {exc}", file=sys.stderr)
     else:
         handlers = {
             "triage": triage,

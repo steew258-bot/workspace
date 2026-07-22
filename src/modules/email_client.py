@@ -18,6 +18,7 @@ MAX_BODY_CHARS = 5000
 DEFAULT_MAILBOX = "INBOX"
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
+_HTML_BLOCK_RE = re.compile(r"<(script|style)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
 
 REQUIRED_IMAP_VARS = ("EMAIL_IMAP_HOST", "EMAIL_ADDRESS", "EMAIL_PASSWORD")
 REQUIRED_SMTP_VARS = ("EMAIL_SMTP_HOST", "EMAIL_ADDRESS", "EMAIL_PASSWORD")
@@ -52,7 +53,9 @@ def _decode_header_value(raw_value: str) -> str:
 
 
 def _html_to_text(html: str) -> str:
-    return unescape(_HTML_TAG_RE.sub(" ", html)).strip()
+    html = _HTML_BLOCK_RE.sub(" ", html)
+    text = unescape(_HTML_TAG_RE.sub(" ", html))
+    return re.sub(r"[ \t]+", " ", text).strip()
 
 
 def _decode_part(part: Message) -> str | None:
@@ -91,7 +94,7 @@ def _extract_body(message: Message) -> str:
 def _connect_imap(mailbox: str) -> imaplib.IMAP4_SSL:
     values = _get_env(REQUIRED_IMAP_VARS)
     host = values["EMAIL_IMAP_HOST"]
-    port = int(os.environ.get("EMAIL_IMAP_PORT", "993"))
+    port = int(os.environ.get("EMAIL_IMAP_PORT") or "993")
     try:
         connection = imaplib.IMAP4_SSL(host, port, timeout=IMAP_TIMEOUT_SECONDS)
         connection.login(values["EMAIL_ADDRESS"], values["EMAIL_PASSWORD"])
@@ -156,7 +159,7 @@ def mark_as_read(uids: list[str], mailbox: str = DEFAULT_MAILBOX) -> None:
 def send_email(to: str, subject: str, body: str) -> None:
     values = _get_env(REQUIRED_SMTP_VARS)
     host = values["EMAIL_SMTP_HOST"]
-    port = int(os.environ.get("EMAIL_SMTP_PORT", "587"))
+    port = int(os.environ.get("EMAIL_SMTP_PORT") or "587")
 
     message = EmailMessage()
     message["From"] = values["EMAIL_ADDRESS"]
