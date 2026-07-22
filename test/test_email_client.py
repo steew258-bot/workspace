@@ -1,3 +1,4 @@
+import imaplib
 import smtplib
 from email.message import EmailMessage
 from unittest.mock import MagicMock, patch
@@ -51,6 +52,52 @@ def test_fetch_unread_parses_messages(monkeypatch):
     assert "rappeler" in messages[0]["corps"]
     fake_connection.login.assert_called_once_with("moi@exemple.com", "secret")
     fake_connection.logout.assert_called_once()
+
+
+def test_fetch_unread_html_only_message_extracts_text(monkeypatch):
+    monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.exemple.com")
+    monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
+    monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+
+    msg = EmailMessage()
+    msg["From"] = "newsletter@exemple.com"
+    msg["Subject"] = "Offre speciale"
+    msg.set_content("<p>Profitez de <b>-20%</b> aujourd'hui.</p>", subtype="html")
+
+    fake_connection = MagicMock()
+    fake_connection.search.return_value = ("OK", [b"1"])
+    fake_connection.fetch.return_value = ("OK", [(b"1 (RFC822 {123}", msg.as_bytes())])
+
+    with patch("src.modules.email_client.imaplib.IMAP4_SSL", return_value=fake_connection):
+        messages = fetch_unread()
+
+    assert len(messages) == 1
+    assert "-20%" in messages[0]["corps"]
+    assert "<p>" not in messages[0]["corps"]
+    assert "<b>" not in messages[0]["corps"]
+
+
+def test_fetch_unread_skips_unparsable_message_and_continues(monkeypatch):
+    monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.exemple.com")
+    monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
+    monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+
+    good_raw = _build_raw_email(subject="OK", body="Message correct")
+    fake_connection = MagicMock()
+    fake_connection.search.return_value = ("OK", [b"1 2"])
+
+    def fake_fetch(uid, _spec):
+        if uid == b"1":
+            raise imaplib.IMAP4.error("boom")
+        return ("OK", [(b"2 (RFC822 {123}", good_raw)])
+
+    fake_connection.fetch.side_effect = fake_fetch
+
+    with patch("src.modules.email_client.imaplib.IMAP4_SSL", return_value=fake_connection):
+        messages = fetch_unread()
+
+    assert len(messages) == 1
+    assert messages[0]["uid"] == "2"
 
 
 def test_fetch_unread_connection_error(monkeypatch):

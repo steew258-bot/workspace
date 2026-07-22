@@ -54,7 +54,10 @@ def _send_payload(payload: dict) -> dict:
     except urllib.error.URLError as exc:
         raise WhatsAppError(f"Echec de l'envoi WhatsApp: {exc.reason}") from exc
 
-    return json.loads(body)
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise WhatsAppError(f"Reponse WhatsApp non JSON: {body!r}") from exc
 
 
 def send_whatsapp_message(to: str, message: str) -> dict:

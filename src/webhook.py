@@ -65,7 +65,8 @@ def _handle_message(message: dict) -> None:
             f"Suggestion : {result['brouillon_reponse']}"
         )
     except Exception as exc:
-        reply = f"Erreur lors du triage : {exc}"
+        print(f"[webhook] echec du triage: {exc}", file=sys.stderr)
+        reply = "Desole, une erreur est survenue lors de l'analyse de ton message."
 
     try:
         send_whatsapp_message(sender, reply)

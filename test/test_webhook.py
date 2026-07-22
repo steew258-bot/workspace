@@ -117,6 +117,27 @@ def test_receive_triages_and_replies(monkeypatch, client):
     assert "haute" in args[1]
 
 
+def test_receive_triage_failure_does_not_leak_exception(monkeypatch, client, capsys):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+
+    with (
+        patch("src.webhook.triage", side_effect=RuntimeError("cle API secrete invalide")),
+        patch("src.webhook.send_whatsapp_message") as mocked_send,
+    ):
+        response = client.post(
+            "/webhook",
+            data=json.dumps(_payload_with_message("33600000000", "Bonjour")),
+            content_type="application/json",
+        )
+
+    assert response.status_code == 200
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "cle API secrete invalide" not in args[1]
+    assert "erreur" in args[1].lower()
+    assert "cle API secrete invalide" in capsys.readouterr().err
+
+
 def test_receive_with_valid_signature(monkeypatch, client):
     monkeypatch.setenv("WHATSAPP_APP_SECRET", "app-secret")
 
