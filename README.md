@@ -17,6 +17,8 @@ structuré) et un test qui vérifie sa fiabilité, comme du vrai logiciel.
 - **email** — email (expéditeur/objet/corps) → urgence, action, brouillon
   de réponse ; connecté en réel à une boîte mail (lecture IMAP des non-lus,
   envoi SMTP)
+- **recherche** — question en langage naturel → réponse synthétique avec
+  sources, via une recherche web en temps réel (API Perplexity)
 
 ## Prérequis
 
@@ -55,9 +57,29 @@ python app.py email "De: client@exemple.com\nObjet: Urgent\n\nMerci de rappeler 
 python app.py email-check
 python app.py email-send client@exemple.com "Re: Urgent" "C'est note, je vous rappelle."
 python app.py whatsapp +33600000000 "Message a envoyer"
+python app.py recherche "Quelles sont les dernieres annonces d'Anthropic ?"
 ```
 
 Chaque commande affiche un JSON structuré sur stdout.
+
+## Recherche
+
+Recherche web en temps réel via l'API Perplexity (modèle `sonar`) — utile
+pour tout ce qui dépasse les flux RSS configurés dans `veille`. Contrairement
+aux autres modules, la structure de sortie (`reponse`, `sources`) est
+construite directement à partir de la réponse de l'API plutôt que demandée
+au modèle : pas de parsing de JSON généré par un LLM, moins de risque
+d'erreur de format.
+
+```bash
+python app.py recherche "Quelles sont les dernieres annonces d'Anthropic ?"
+```
+
+Renvoie `{"reponse": "...", "sources": ["<url>", ...]}`.
+
+Nécessite dans `.env` :
+
+- `PERPLEXITY_API_KEY` (perplexity.ai/settings/api)
 
 ## Email
 

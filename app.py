@@ -7,6 +7,7 @@ from src.modules.email import email as email_triage
 from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
 from src.modules.feeds import fetch_items_text
 from src.modules.planification import planification
+from src.modules.recherche import recherche
 from src.modules.resume import resume
 from src.modules.triage import triage
 from src.modules.veille import veille
@@ -15,6 +16,9 @@ from src.notifications import notify_if_urgent
 
 
 def main(argv=None):
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     parser = argparse.ArgumentParser(prog="ops-agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -38,6 +42,11 @@ def main(argv=None):
         "resume", help="Resume un texte long en points cles"
     )
     resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
+
+    recherche_parser = subparsers.add_parser(
+        "recherche", help="Recherche web en temps reel via Perplexity, avec sources"
+    )
+    recherche_parser.add_argument("text", help="Question a rechercher sur le web")
 
     email_parser = subparsers.add_parser(
         "email", help="Analyse un email brut (expediteur/objet/corps) et propose une action"
@@ -119,6 +128,7 @@ def main(argv=None):
             "veille": veille,
             "planification": planification,
             "resume": resume,
+            "recherche": recherche,
         }
         result = handlers[args.command](args.text)
         notify_if_urgent(args.command, result)

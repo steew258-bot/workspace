@@ -27,6 +27,7 @@ from app import main
             {"ordre": ["a"], "tache_prioritaire": "a", "justification": "j"},
         ),
         ("resume", "app.resume", {"resume": "r", "points_cles": ["a"]}),
+        ("recherche", "app.recherche", {"reponse": "r", "sources": ["https://exemple.com"]}),
     ],
 )
 def test_command_prints_json(capsys, command, target, fake_result):
