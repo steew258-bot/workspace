@@ -82,8 +82,8 @@ Récupère les emails non lus par IMAP, les passe un par un au module
 d'analyse, puis marque comme lus uniquement ceux traités avec succès (un
 échec d'analyse sur un message ne fait pas perdre les autres, et le
 message en échec reste non lu pour un prochain passage). C'est le pendant
-de `veille-feeds` pour les emails : peut être automatisé de la même façon
-(cron, GitHub Actions).
+de `veille-feeds` pour les emails : automatisé toutes les 30 minutes via
+`.github/workflows/email-check.yml` (voir section Automatisation).
 
 ### Envoi (`email-send`)
 
@@ -184,6 +184,26 @@ template au lieu d'un message texte libre.
 (scraping réel, pas de watchlist manuelle à maintenir) et ouvre une
 issue GitHub avec les résultats. Nécessite le secret de repo
 `ANTHROPIC_API_KEY`.
+
+`.github/workflows/email-check.yml` exécute `email-check` toutes les 30
+minutes (veille email quasi permanente) et ouvre une issue GitHub
+uniquement s'il y a des emails traités (pas d'issue si la boîte est
+vide, pour éviter le bruit). Si `WHATSAPP_NOTIFY_TO` est aussi configuré
+en secret, les emails urgents déclenchent en plus une notification
+WhatsApp immédiate (voir "Notifications proactives" dans la section
+Email). Nécessite les secrets de repo :
+
+- `ANTHROPIC_API_KEY`
+- `EMAIL_IMAP_HOST`, `EMAIL_IMAP_PORT`, `EMAIL_ADDRESS`, `EMAIL_PASSWORD`,
+  `EMAIL_MAILBOX` (mêmes valeurs que dans `.env`, voir section Email)
+- optionnel : `WHATSAPP_API_URL`, `WHATSAPP_PHONE_NUMBER_ID`,
+  `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_NOTIFY_TO` (et
+  `WHATSAPP_NOTIFY_TEMPLATE`/`_LANG` si au-delà de la fenêtre de 24h) pour
+  la notification proactive
+
+Les secrets de repo (Settings > Secrets and variables > Actions) sont
+indépendants du `.env` local — il faut les renseigner séparément pour que
+les workflows fonctionnent.
 
 ## Développement
 

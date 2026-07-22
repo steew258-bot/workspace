@@ -1,0 +1,50 @@
+name: Suivi email
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  email-check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Run email-check
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EMAIL_IMAP_HOST: ${{ secrets.EMAIL_IMAP_HOST }}
+          EMAIL_IMAP_PORT: ${{ secrets.EMAIL_IMAP_PORT }}
+          EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_MAILBOX: ${{ secrets.EMAIL_MAILBOX }}
+          WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_NOTIFY_TO: ${{ secrets.WHATSAPP_NOTIFY_TO }}
+          WHATSAPP_NOTIFY_TEMPLATE: ${{ secrets.WHATSAPP_NOTIFY_TEMPLATE }}
+          WHATSAPP_NOTIFY_TEMPLATE_LANG: ${{ secrets.WHATSAPP_NOTIFY_TEMPLATE_LANG }}
+        run: |
+          python app.py email-check > email-result.json
+      - name: Check for processed emails
+        id: check
+        run: |
+          if jq -e '(.traites // []) | length > 0' email-result.json > /dev/null; then
+            echo "has_results=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_results=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create issue with results
+        if: steps.check.outputs.has_results == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Emails traites du $(date +'%Y-%m-%d %H:%M')" \
+            --body-file email-result.json
