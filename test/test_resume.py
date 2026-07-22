@@ -40,3 +40,9 @@ def test_parse_wrong_type():
 def test_parse_non_json():
     with pytest.raises(ResumeError):
         _parse_response("pas du json")
+
+
+@pytest.mark.parametrize("raw", ["[]", "null", '"juste une chaine"', "42"])
+def test_parse_valid_json_but_not_an_object(raw):
+    with pytest.raises(ResumeError):
+        _parse_response(raw)

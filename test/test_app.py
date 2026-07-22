@@ -1,9 +1,26 @@
 import json
-from unittest.mock import patch
+import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from app import main
+
+
+def test_main_forces_utf8_stdout_and_stderr():
+    fake_out = MagicMock()
+    fake_err = MagicMock()
+    fake_result = {"action": "a", "urgence": "basse", "brouillon_reponse": "b"}
+
+    with (
+        patch.object(sys, "stdout", fake_out),
+        patch.object(sys, "stderr", fake_err),
+        patch("app.triage", return_value=fake_result),
+    ):
+        main(["triage", "texte"])
+
+    fake_out.reconfigure.assert_called_once_with(encoding="utf-8")
+    fake_err.reconfigure.assert_called_once_with(encoding="utf-8")
 
 
 @pytest.mark.parametrize(

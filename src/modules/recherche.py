@@ -29,11 +29,15 @@ def _get_api_key() -> str:
 
 
 def _parse_response(data: dict) -> dict:
+    if not isinstance(data, dict):
+        raise RechercheError(f"Reponse Perplexity invalide, objet attendu: {data!r}")
+
     choices = data.get("choices")
-    if not choices or not isinstance(choices, list):
+    if not choices or not isinstance(choices, list) or not isinstance(choices[0], dict):
         raise RechercheError(f"Reponse Perplexity sans 'choices': {data!r}")
 
-    content = choices[0].get("message", {}).get("content")
+    message = choices[0].get("message")
+    content = message.get("content") if isinstance(message, dict) else None
     if not content or not isinstance(content, str):
         raise RechercheError(f"Reponse Perplexity sans contenu exploitable: {data!r}")
 

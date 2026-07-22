@@ -29,6 +29,9 @@ def _parse_response(raw_text: str) -> dict:
     except json.JSONDecodeError as exc:
         raise EmailError(f"Reponse non JSON: {raw_text!r}") from exc
 
+    if not isinstance(data, dict):
+        raise EmailError(f"Reponse JSON invalide, objet attendu: {raw_text!r}")
+
     missing = REQUIRED_KEYS - data.keys()
     if missing:
         raise EmailError(f"Champs manquants dans la reponse: {missing}")

@@ -28,6 +28,9 @@ def _parse_response(raw_text: str) -> dict:
     except json.JSONDecodeError as exc:
         raise TriageError(f"Reponse non JSON: {raw_text!r}") from exc
 
+    if not isinstance(data, dict):
+        raise TriageError(f"Reponse JSON invalide, objet attendu: {raw_text!r}")
+
     missing = REQUIRED_KEYS - data.keys()
     if missing:
         raise TriageError(f"Champs manquants dans la reponse: {missing}")

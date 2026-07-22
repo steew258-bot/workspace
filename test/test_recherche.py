@@ -70,6 +70,22 @@ def test_recherche_api_error(monkeypatch):
             recherche("Une question")
 
 
+def test_parse_response_top_level_not_a_dict():
+    for bad_data in ([], None, "juste une chaine", 42):
+        with pytest.raises(RechercheError):
+            _parse_response(bad_data)
+
+
+def test_parse_response_choice_item_not_a_dict():
+    with pytest.raises(RechercheError):
+        _parse_response({"choices": ["pas-un-dict"]})
+
+
+def test_parse_response_message_not_a_dict():
+    with pytest.raises(RechercheError):
+        _parse_response({"choices": [{"message": "pas-un-dict"}]})
+
+
 def test_parse_response_missing_choices():
     with pytest.raises(RechercheError):
         _parse_response({})

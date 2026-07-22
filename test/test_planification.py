@@ -29,3 +29,9 @@ def test_parse_empty_ordre():
 def test_parse_non_json():
     with pytest.raises(PlanificationError):
         _parse_response("pas du json")
+
+
+@pytest.mark.parametrize("raw", ["[]", "null", '"juste une chaine"', "42"])
+def test_parse_valid_json_but_not_an_object(raw):
+    with pytest.raises(PlanificationError):
+        _parse_response(raw)

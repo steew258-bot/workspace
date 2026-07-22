@@ -16,8 +16,9 @@ from src.notifications import notify_if_urgent
 
 
 def main(argv=None):
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
 
     parser = argparse.ArgumentParser(prog="ops-agent")
     subparsers = parser.add_subparsers(dest="command", required=True)

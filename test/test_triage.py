@@ -29,3 +29,9 @@ def test_parse_invalid_urgence():
 def test_parse_non_json():
     with pytest.raises(TriageError):
         _parse_response("ceci n'est pas du json")
+
+
+@pytest.mark.parametrize("raw", ["[]", "null", '"juste une chaine"', "42"])
+def test_parse_valid_json_but_not_an_object(raw):
+    with pytest.raises(TriageError):
+        _parse_response(raw)
