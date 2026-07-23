@@ -73,6 +73,10 @@ Cinq autres modules d'analyse fonctionnent avec la seule clé Anthropic
 déjà configurée : `veille`, `planification`, `resume`, `crm`, `agenda`,
 `facturation`. Essaie-les avec `python app.py <module> "<ton texte>"`.
 
+Astuce : `facturation --export-xlsx chemin.xlsx` génère en plus un vrai
+fichier Excel du devis (fonctionnalité beta, détails dans `README.md`,
+section "Devis Excel réel").
+
 Trois intégrations demandent une configuration en plus (détails dans
 `README.md`) :
 

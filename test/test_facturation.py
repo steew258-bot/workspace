@@ -1,6 +1,8 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 
-from src.modules.facturation import FacturationError, _parse_response
+from src.modules.facturation import FacturationError, _parse_response, facturation_export_xlsx
 
 
 def test_parse_valid_response_with_prices():
@@ -80,3 +82,33 @@ def test_parse_non_json():
 def test_parse_valid_json_but_not_an_object(raw):
     with pytest.raises(FacturationError):
         _parse_response(raw)
+
+
+def test_facturation_export_xlsx_builds_prompt_and_delegates_to_skill():
+    devis = {
+        "client": "Societe X",
+        "lignes": [
+            {"designation": "Developpement site vitrine", "quantite": 1, "prix_unitaire": 1500},
+            {"designation": "Maintenance", "quantite": 2, "prix_unitaire": None},
+        ],
+        "total_estime": None,
+        "notes": "Prix de maintenance a confirmer",
+    }
+    client = MagicMock()
+
+    with patch(
+        "src.modules.facturation.generate_file_with_skill", return_value="devis.xlsx"
+    ) as mocked:
+        result = facturation_export_xlsx(devis, "devis.xlsx", client=client)
+
+    assert result == "devis.xlsx"
+    mocked.assert_called_once()
+    args, kwargs = mocked.call_args
+    prompt = args[0]
+    assert "Societe X" in prompt
+    assert "Developpement site vitrine" in prompt
+    assert "1500 EUR" in prompt
+    assert "prix a definir" in prompt
+    assert args[1] == "xlsx"
+    assert args[2] == "devis.xlsx"
+    assert kwargs["client"] is client

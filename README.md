@@ -30,7 +30,8 @@ référence technique complète.
   connecte ça en réel à Google Calendar (OAuth)
 - **facturation** — description de prestation → brouillon de devis
   structuré (lignes, quantités, prix) ; n'invente jamais de prix non
-  précisé dans le texte
+  précisé dans le texte. Avec `--export-xlsx`, génère en plus un vrai
+  fichier Excel (voir la section "Devis Excel réel" plus bas)
 
 ## Prérequis
 
@@ -74,6 +75,7 @@ python app.py crm "Appel du 12/07 : interesse mais budget pas encore valide, doi
 python app.py agenda "RDV client 14h-15h ; appel fournisseur 14h30 ; dentiste 17h"
 python app.py agenda-check                                      # vrais evenements Google Calendar
 python app.py facturation "2 jours de dev a 500e/jour pour le client Dupont"
+python app.py facturation "..." --export-xlsx factures/dupont.xlsx  # vrai fichier Excel
 python app.py doctor                                            # diagnostic de la config
 ```
 
@@ -92,6 +94,28 @@ avertissements de sécurité (ex : `WHATSAPP_APP_SECRET` toujours à sa
 valeur d'exemple publique, `WHATSAPP_NOTIFY_TO` absente). Code de sortie
 `0` si tous les modules sont utilisables, `1` sinon — utilisable dans un
 script ou avant de lancer une automatisation.
+
+## Devis Excel réel (`facturation --export-xlsx`)
+
+`facturation` renvoie normalement un brouillon de devis en JSON. Avec
+`--export-xlsx`, il génère en plus un vrai fichier Excel via les **Agent
+Skills** d'Anthropic (fonctionnalité beta) : tableau des lignes (désignation,
+quantité, prix unitaire, total par ligne) et total général.
+
+```bash
+python app.py facturation "2 jours de dev a 500e/jour pour le client Dupont" \
+  --export-xlsx factures/dupont.xlsx
+```
+
+Le JSON de sortie contient alors une clé `fichier_xlsx` avec le chemin du
+fichier généré. Le dossier de destination (`factures/` dans l'exemple) est
+créé automatiquement s'il n'existe pas ; il est ignoré par git
+(`.gitignore`) puisque son contenu est propre à chaque utilisateur du
+template.
+
+**Coût** : cette fonctionnalité consomme du temps de conteneur d'exécution
+de code sur l'API Anthropic — gratuit jusqu'à un quota mensuel, puis
+facturé. `python app.py doctor` rappelle ce point à chaque exécution.
 
 ## Recherche
 

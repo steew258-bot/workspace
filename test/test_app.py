@@ -81,6 +81,49 @@ def test_command_prints_json(capsys, command, target, fake_result):
     assert json.loads(captured.out) == fake_result
 
 
+def test_facturation_export_xlsx_flag_adds_file_path(capsys):
+    devis = {
+        "client": "X",
+        "lignes": [{"designation": "A", "quantite": 1, "prix_unitaire": 10}],
+        "total_estime": 10,
+        "notes": "",
+    }
+
+    with (
+        patch("app.facturation", return_value=devis) as mocked_facturation,
+        patch("app.facturation_export_xlsx", return_value="devis.xlsx") as mocked_export,
+        patch("app.notify_if_urgent") as mocked_notify,
+    ):
+        main(["facturation", "un texte quelconque", "--export-xlsx", "devis.xlsx"])
+
+    mocked_facturation.assert_called_once_with("un texte quelconque")
+    mocked_export.assert_called_once_with(devis, "devis.xlsx")
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {**devis, "fichier_xlsx": "devis.xlsx"}
+    mocked_notify.assert_called_once_with("facturation", result)
+
+
+def test_facturation_without_export_flag_skips_export(capsys):
+    devis = {
+        "client": "X",
+        "lignes": [{"designation": "A", "quantite": 1, "prix_unitaire": 10}],
+        "total_estime": 10,
+        "notes": "",
+    }
+
+    with (
+        patch("app.facturation", return_value=devis),
+        patch("app.facturation_export_xlsx") as mocked_export,
+        patch("app.notify_if_urgent"),
+    ):
+        main(["facturation", "un texte quelconque"])
+
+    mocked_export.assert_not_called()
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == devis
+
+
 def test_email_check_processes_and_marks_read(capsys):
     messages = [
         {"uid": "1", "de": "a@exemple.com", "objet": "Sujet 1", "corps": "Corps 1"},

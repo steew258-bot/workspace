@@ -35,7 +35,7 @@ def test_check_reports_all_modules_incomplete_when_nothing_configured(monkeypatc
     assert set(result["modules"].keys()) == set(MODULE_REQUIREMENTS.keys())
     for module in result["modules"].values():
         assert module["statut"] == "incomplet"
-    assert len(result["avertissements"]) == 2
+    assert len(result["avertissements"]) == 3
 
 
 def test_check_module_ok_when_all_vars_configured(monkeypatch):
@@ -63,14 +63,24 @@ def test_check_detects_unreplaced_placeholder(monkeypatch):
     )
 
 
-def test_warnings_absent_when_whatsapp_extras_configured(monkeypatch):
+def test_whatsapp_warnings_absent_when_whatsapp_extras_configured(monkeypatch):
     monkeypatch.setenv("WHATSAPP_APP_SECRET", "un-secret")
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
 
     with patch("src.diagnostics._load_example_values", return_value={}):
         result = check()
 
-    assert result["avertissements"] == []
+    assert not any("WHATSAPP" in w for w in result["avertissements"])
+
+
+def test_skills_cost_warning_always_present(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_APP_SECRET", "un-secret")
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+
+    with patch("src.diagnostics._load_example_values", return_value={}):
+        result = check()
+
+    assert any("export-xlsx" in w for w in result["avertissements"])
 
 
 def test_warning_present_when_app_secret_still_placeholder(monkeypatch):

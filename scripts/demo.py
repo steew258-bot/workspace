@@ -122,6 +122,26 @@ DEMOS = [
             "notes": "",
         },
     },
+    {
+        "module": "facturation",
+        "commande": (
+            'python app.py facturation "2 jours de dev a 500e/jour pour le client Dupont" '
+            "--export-xlsx factures/dupont.xlsx"
+        ),
+        "sortie": {
+            "client": "Dupont",
+            "lignes": [
+                {"designation": "Journee de developpement", "quantite": 2, "prix_unitaire": 500}
+            ],
+            "total_estime": 1000,
+            "notes": "",
+            "fichier_xlsx": "factures/dupont.xlsx",
+        },
+        "note": (
+            "--export-xlsx genere un vrai fichier Excel via les Agent Skills Anthropic "
+            "(fonctionnalite beta, cf. `python app.py doctor`)."
+        ),
+    },
 ]
 
 SEPARATOR = "-" * 70
@@ -136,6 +156,8 @@ def run() -> None:
         print(f"\n[{demo['module']}]")
         print(f"$ {demo['commande']}\n")
         print(json.dumps(demo["sortie"], ensure_ascii=False, indent=2))
+        if demo.get("note"):
+            print(f"\nNote : {demo['note']}")
         print(f"\n{SEPARATOR}")
 
     print("\nCeci est un apercu. Avec une vraie cle ANTHROPIC_API_KEY configuree")

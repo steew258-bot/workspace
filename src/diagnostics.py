@@ -99,4 +99,10 @@ def check() -> dict:
             "WHATSAPP_NOTIFY_TO non definie : les notifications proactives sont desactivees."
         )
 
+    avertissements.append(
+        "facturation --export-xlsx utilise les Agent Skills Anthropic (fonctionnalite beta) : "
+        "chaque generation de devis consomme du temps de conteneur d'execution de code, "
+        "gratuit jusqu'a un quota mensuel puis facture par l'API Anthropic."
+    )
+
     return {"modules": modules, "avertissements": avertissements}

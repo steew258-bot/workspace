@@ -3,6 +3,7 @@ import json
 import anthropic
 
 from src.modules._client import extract_text, get_client
+from src.modules._skills import generate_file_with_skill
 
 SYSTEM_PROMPT = """Tu es un assistant de facturation. Analyse la description de prestation \
 fournie et reponds UNIQUEMENT avec un JSON valide, sans aucun texte autour, au format :
@@ -69,3 +70,28 @@ def facturation(text: str, client: anthropic.Anthropic | None = None) -> dict:
         messages=[{"role": "user", "content": text}],
     )
     return _parse_response(extract_text(response))
+
+
+def facturation_export_xlsx(
+    data: dict, output_path: str, client: anthropic.Anthropic | None = None
+) -> str:
+    """Genere un vrai fichier .xlsx pour un devis deja structure par facturation().
+    Fonctionnalite beta (Agent Skills), consomme du temps de conteneur d'execution
+    de code : voir `python app.py doctor`."""
+    lignes_text = "\n".join(
+        f"- {ligne['designation']} x{ligne['quantite']}"
+        + (
+            f" a {ligne['prix_unitaire']} EUR l'unite"
+            if ligne["prix_unitaire"] is not None
+            else " (prix a definir)"
+        )
+        for ligne in data["lignes"]
+    )
+    prompt = (
+        "Cree un devis au format Excel (.xlsx), avec un tableau (designation, quantite, "
+        "prix unitaire, total par ligne) et un total general en bas.\n"
+        f"Client : {data['client'] or 'non precise'}\n"
+        f"Lignes :\n{lignes_text}\n"
+        f"Notes : {data['notes'] or 'aucune'}"
+    )
+    return generate_file_with_skill(prompt, "xlsx", output_path, client=client)

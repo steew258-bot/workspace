@@ -11,7 +11,7 @@ from src.modules.calendar_client import fetch_events
 from src.modules.crm import crm
 from src.modules.email import email as email_triage
 from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
-from src.modules.facturation import facturation
+from src.modules.facturation import facturation, facturation_export_xlsx
 from src.modules.feeds import fetch_items_text
 from src.modules.planification import planification
 from src.modules.recherche import recherche
@@ -55,6 +55,11 @@ def main(argv: list[str] | None = None) -> None:
         "facturation", help="Genere un brouillon de devis structure a partir d'une description"
     )
     facturation_parser.add_argument("text", help="Description de la prestation ou des produits")
+    facturation_parser.add_argument(
+        "--export-xlsx",
+        default=None,
+        help="Chemin du fichier .xlsx a generer pour ce devis (beta, cf. doctor)",
+    )
 
     agenda_parser = subparsers.add_parser(
         "agenda", help="Analyse evenements/contraintes du jour: conflits, creneaux, suggestions"
@@ -147,6 +152,12 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "email-send":
         send_email(args.to, args.subject, args.body)
         result = {"statut": "envoye", "to": args.to, "objet": args.subject}
+    elif args.command == "facturation":
+        result = facturation(args.text)
+        if args.export_xlsx:
+            chemin = facturation_export_xlsx(result, args.export_xlsx)
+            result = {**result, "fichier_xlsx": chemin}
+        notify_if_urgent("facturation", result)
     elif args.command == "email-check":
         mailbox = args.mailbox or os.environ.get("EMAIL_MAILBOX") or "INBOX"
         messages = fetch_unread(mailbox=mailbox, max_messages=args.max)
@@ -181,7 +192,6 @@ def main(argv: list[str] | None = None) -> None:
             "recherche": recherche,
             "crm": crm,
             "agenda": agenda,
-            "facturation": facturation,
         }
         result = handlers[args.command](args.text)
         notify_if_urgent(args.command, result)
