@@ -50,9 +50,11 @@ def test_send_whatsapp_message_api_error(monkeypatch):
         fp=MagicMock(read=lambda: b'{"error": "invalid token"}'),
     )
 
-    with patch("src.modules.whatsapp.urllib.request.urlopen", side_effect=http_error):
-        with pytest.raises(WhatsAppError):
-            send_whatsapp_message("+33600000000", "Bonjour")
+    with (
+        patch("src.modules.whatsapp.urllib.request.urlopen", side_effect=http_error),
+        pytest.raises(WhatsAppError),
+    ):
+        send_whatsapp_message("+33600000000", "Bonjour")
 
 
 def test_send_whatsapp_message_non_json_response(monkeypatch):
@@ -64,9 +66,11 @@ def test_send_whatsapp_message_non_json_response(monkeypatch):
     fake_response.read.return_value = b"<html>not json</html>"
     fake_response.__enter__.return_value = fake_response
 
-    with patch("src.modules.whatsapp.urllib.request.urlopen", return_value=fake_response):
-        with pytest.raises(WhatsAppError):
-            send_whatsapp_message("+33600000000", "Bonjour")
+    with (
+        patch("src.modules.whatsapp.urllib.request.urlopen", return_value=fake_response),
+        pytest.raises(WhatsAppError),
+    ):
+        send_whatsapp_message("+33600000000", "Bonjour")
 
 
 def test_send_whatsapp_template_success(monkeypatch):

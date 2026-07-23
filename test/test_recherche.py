@@ -65,9 +65,11 @@ def test_recherche_api_error(monkeypatch):
         fp=MagicMock(read=lambda: b'{"error": "invalid api key"}'),
     )
 
-    with patch("src.modules.recherche.urllib.request.urlopen", side_effect=http_error):
-        with pytest.raises(RechercheError):
-            recherche("Une question")
+    with (
+        patch("src.modules.recherche.urllib.request.urlopen", side_effect=http_error),
+        pytest.raises(RechercheError),
+    ):
+        recherche("Une question")
 
 
 def test_parse_response_top_level_not_a_dict():

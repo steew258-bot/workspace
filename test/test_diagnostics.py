@@ -26,7 +26,7 @@ def test_check_var_usable_default_not_flagged_even_if_unchanged(monkeypatch):
 
 
 def test_check_reports_all_modules_incomplete_when_nothing_configured(monkeypatch):
-    for var in ALL_TRACKED_VARS + ["WHATSAPP_APP_SECRET", "WHATSAPP_NOTIFY_TO"]:
+    for var in [*ALL_TRACKED_VARS, "WHATSAPP_APP_SECRET", "WHATSAPP_NOTIFY_TO"]:
         monkeypatch.delenv(var, raising=False)
 
     with patch("src.diagnostics._load_example_values", return_value={}):

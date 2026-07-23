@@ -188,9 +188,11 @@ def test_email_check_mark_as_read_failure_still_reports_and_notifies(capsys):
 def test_doctor_exits_zero_when_all_ok(capsys):
     fake_result = {"modules": {"triage": {"statut": "ok", "problemes": {}}}, "avertissements": []}
 
-    with patch("app.check_environment", return_value=fake_result):
-        with pytest.raises(SystemExit) as exc_info:
-            main(["doctor"])
+    with (
+        patch("app.check_environment", return_value=fake_result),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main(["doctor"])
 
     assert exc_info.value.code == 0
     captured = capsys.readouterr()
@@ -205,9 +207,11 @@ def test_doctor_exits_one_when_incomplete(capsys):
         "avertissements": [],
     }
 
-    with patch("app.check_environment", return_value=fake_result):
-        with pytest.raises(SystemExit) as exc_info:
-            main(["doctor"])
+    with (
+        patch("app.check_environment", return_value=fake_result),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main(["doctor"])
 
     assert exc_info.value.code == 1
 

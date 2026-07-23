@@ -35,9 +35,7 @@ def _should_include(relative_path: Path) -> bool:
         return False
     if relative_path.suffix in EXCLUDE_SUFFIXES:
         return False
-    if set(relative_path.parts) & EXCLUDE_DIR_NAMES:
-        return False
-    return True
+    return not set(relative_path.parts) & EXCLUDE_DIR_NAMES
 
 
 def build_package(output_dir: Path = DIST_DIR) -> tuple[Path, int]:

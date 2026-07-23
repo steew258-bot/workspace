@@ -146,9 +146,11 @@ def test_fetch_unread_connection_error(monkeypatch):
     monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
     monkeypatch.setenv("EMAIL_PASSWORD", "secret")
 
-    with patch("src.modules.email_client.imaplib.IMAP4_SSL", side_effect=OSError("boom")):
-        with pytest.raises(EmailClientError):
-            fetch_unread()
+    with (
+        patch("src.modules.email_client.imaplib.IMAP4_SSL", side_effect=OSError("boom")),
+        pytest.raises(EmailClientError),
+    ):
+        fetch_unread()
 
 
 def test_mark_as_read_stores_flags(monkeypatch):
@@ -221,6 +223,5 @@ def test_send_email_smtp_error_raises_client_error(monkeypatch):
 
     with patch(
         "src.modules.email_client.smtplib.SMTP", side_effect=smtplib.SMTPException("boom")
-    ):
-        with pytest.raises(EmailClientError):
-            send_email("client@exemple.com", "Sujet", "Corps")
+    ), pytest.raises(EmailClientError):
+        send_email("client@exemple.com", "Sujet", "Corps")
