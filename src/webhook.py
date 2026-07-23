@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import os
 import sys
+import time
 
 from flask import Flask, request
 from flask.typing import ResponseReturnValue
@@ -9,7 +10,22 @@ from flask.typing import ResponseReturnValue
 from src.modules.triage import triage
 from src.modules.whatsapp import WhatsAppError, send_whatsapp_message
 
+# Taille max d'une requete : un payload WhatsApp legitime fait quelques Ko,
+# 1 Mo est largement suffisant et evite qu'un payload enorme n'epuise la
+# memoire du process.
+MAX_CONTENT_LENGTH_BYTES = 1_000_000
+
+# Rate limiting basique par IP sur les messages entrants : protege contre un
+# flood (volontaire ou boucle de retry cassee) qui consommerait du quota
+# API Anthropic/WhatsApp pour rien. En memoire, suffisant pour un process
+# unique (waitress mono-worker) ; a revoir si deploye avec plusieurs workers.
+RATE_LIMIT_MAX_REQUESTS = 30
+RATE_LIMIT_WINDOW_SECONDS = 60.0
+
+_request_timestamps: dict[str, list[float]] = {}
+
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH_BYTES
 
 
 class WebhookError(RuntimeError):
@@ -41,6 +57,16 @@ def _verify_signature(payload: bytes, signature_header: str | None) -> bool:
     expected = hmac.new(app_secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
     received = signature_header.removeprefix("sha256=")
     return hmac.compare_digest(expected, received)
+
+
+def _is_rate_limited(identifier: str) -> bool:
+    now = time.monotonic()
+    timestamps = _request_timestamps.setdefault(identifier, [])
+    timestamps[:] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW_SECONDS]
+    if len(timestamps) >= RATE_LIMIT_MAX_REQUESTS:
+        return True
+    timestamps.append(now)
+    return False
 
 
 def _extract_messages(payload: object) -> list[dict]:
@@ -100,6 +126,9 @@ def verify() -> ResponseReturnValue:
 
 @app.post("/webhook")
 def receive() -> ResponseReturnValue:
+    if _is_rate_limited(request.remote_addr or "inconnu"):
+        return "Trop de requetes", 429
+
     if not _verify_signature(request.get_data(), request.headers.get("X-Hub-Signature-256")):
         return "Signature invalide", 403
 

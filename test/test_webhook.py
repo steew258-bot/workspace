@@ -1,17 +1,27 @@
 import hashlib
 import hmac
 import json
+import time
 from unittest.mock import patch
 
 import pytest
 
-from src.webhook import app
+from src.webhook import MAX_CONTENT_LENGTH_BYTES, app
 
 
 @pytest.fixture
 def client():
     app.config.update(TESTING=True)
     return app.test_client()
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    from src.webhook import _request_timestamps
+
+    _request_timestamps.clear()
+    yield
+    _request_timestamps.clear()
 
 
 def test_verify_success(monkeypatch, client):
@@ -212,3 +222,56 @@ def test_receive_with_valid_signature(monkeypatch, client):
 
     assert response.status_code == 200
     mocked_send.assert_called_once()
+
+
+def test_receive_rejects_oversized_payload(monkeypatch, client):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+
+    huge_body = json.dumps({"padding": "x" * (MAX_CONTENT_LENGTH_BYTES + 1)}).encode("utf-8")
+    response = client.post("/webhook", data=huge_body, content_type="application/json")
+
+    assert response.status_code == 413
+
+
+def test_receive_rate_limits_excessive_requests(monkeypatch, client):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+    monkeypatch.setattr("src.webhook.RATE_LIMIT_MAX_REQUESTS", 2)
+
+    body = json.dumps(_payload_with_message("33600000000", "Bonjour")).encode("utf-8")
+
+    with (
+        patch(
+            "src.webhook.triage",
+            return_value={"action": "a", "urgence": "basse", "brouillon_reponse": "b"},
+        ),
+        patch("src.webhook.send_whatsapp_message"),
+    ):
+        first = client.post("/webhook", data=body, content_type="application/json")
+        second = client.post("/webhook", data=body, content_type="application/json")
+        third = client.post("/webhook", data=body, content_type="application/json")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert third.status_code == 429
+
+
+def test_receive_rate_limit_resets_after_window(monkeypatch, client):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+    monkeypatch.setattr("src.webhook.RATE_LIMIT_MAX_REQUESTS", 1)
+    monkeypatch.setattr("src.webhook.RATE_LIMIT_WINDOW_SECONDS", 0.05)
+
+    body = json.dumps(_payload_with_message("33600000000", "Bonjour")).encode("utf-8")
+
+    with (
+        patch(
+            "src.webhook.triage",
+            return_value={"action": "a", "urgence": "basse", "brouillon_reponse": "b"},
+        ),
+        patch("src.webhook.send_whatsapp_message"),
+    ):
+        first = client.post("/webhook", data=body, content_type="application/json")
+        time.sleep(0.1)
+        second = client.post("/webhook", data=body, content_type="application/json")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
