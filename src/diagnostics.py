@@ -30,6 +30,7 @@ MODULE_REQUIREMENTS = {
     "resume": ("ANTHROPIC_API_KEY",),
     "email": ("ANTHROPIC_API_KEY",),
     "crm": ("ANTHROPIC_API_KEY",),
+    "agenda": ("ANTHROPIC_API_KEY",),
     "email-check": ("ANTHROPIC_API_KEY", *REQUIRED_IMAP_VARS),
     "email-send": REQUIRED_SMTP_VARS,
     "recherche": RECHERCHE_REQUIRED_VARS,

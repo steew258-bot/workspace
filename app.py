@@ -4,6 +4,7 @@ import os
 import sys
 
 from src.diagnostics import check as check_environment
+from src.modules.agenda import agenda
 from src.modules.crm import crm
 from src.modules.email import email as email_triage
 from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
@@ -45,6 +46,11 @@ def main(argv=None):
         "resume", help="Resume un texte long en points cles"
     )
     resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
+
+    agenda_parser = subparsers.add_parser(
+        "agenda", help="Analyse evenements/contraintes du jour: conflits, creneaux, suggestions"
+    )
+    agenda_parser.add_argument("text", help="Evenements et contraintes du jour")
 
     crm_parser = subparsers.add_parser(
         "crm", help="Analyse des notes d'echanges client et propose statut/action/risque"
@@ -148,6 +154,7 @@ def main(argv=None):
             "resume": resume,
             "recherche": recherche,
             "crm": crm,
+            "agenda": agenda,
         }
         result = handlers[args.command](args.text)
         notify_if_urgent(args.command, result)

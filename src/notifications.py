@@ -51,6 +51,12 @@ def notify_if_urgent(command: str, result: dict) -> None:
             f"Statut : {result.get('statut', '')}\n"
             f"Action : {result.get('action', '')}"
         )
+    elif command == "agenda" and result.get("conflits"):
+        conflits = result["conflits"]
+        lignes = "\n".join(
+            f"- {' / '.join(c.get('evenements', []))} ({c.get('raison', '')})" for c in conflits
+        )
+        _send(f"Agenda : {len(conflits)} conflit(s) detecte(s)\n{lignes}")
     elif command == "email-check":
         urgents = [item for item in result.get("traites", []) if item.get("urgence") == "haute"]
         if urgents:

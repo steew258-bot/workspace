@@ -144,6 +144,34 @@ def test_crm_risque_faible_does_not_notify(monkeypatch):
     mocked_send.assert_not_called()
 
 
+def test_agenda_with_conflicts_notifies(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "conflits": [{"evenements": ["RDV client 14h", "Appel 14h"], "raison": "meme creneau"}],
+        "creneaux_libres": [],
+        "suggestions": [],
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("agenda", result)
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "RDV client 14h" in args[1]
+
+
+def test_agenda_without_conflicts_does_not_notify(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {"conflits": [], "creneaux_libres": ["9h-10h"], "suggestions": []}
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("agenda", result)
+
+    mocked_send.assert_not_called()
+
+
 def test_email_check_with_urgent_item_notifies(monkeypatch):
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
     monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)

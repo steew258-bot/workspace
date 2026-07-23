@@ -55,6 +55,11 @@ def test_main_forces_utf8_stdout_and_stderr():
                 "risque_churn": "faible",
             },
         ),
+        (
+            "agenda",
+            "app.agenda",
+            {"conflits": [], "creneaux_libres": ["9h-10h"], "suggestions": []},
+        ),
     ],
 )
 def test_command_prints_json(capsys, command, target, fake_result):

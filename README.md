@@ -21,6 +21,9 @@ structuré) et un test qui vérifie sa fiabilité, comme du vrai logiciel.
   sources, via une recherche web en temps réel (API Perplexity)
 - **crm** — notes d'échanges avec un client/prospect → statut du dossier,
   relance à faire, prochaine action, risque de churn
+- **agenda** — événements et contraintes du jour → conflits détectés,
+  créneaux libres, suggestions de replanification (analyse texte ; pas
+  encore connecté à un vrai calendrier)
 
 ## Prérequis
 
@@ -61,6 +64,7 @@ python app.py email-send client@exemple.com "Re: Urgent" "C'est note, je vous ra
 python app.py whatsapp +33600000000 "Message a envoyer"
 python app.py recherche "Quelles sont les dernieres annonces d'Anthropic ?"
 python app.py crm "Appel du 12/07 : interesse mais budget pas encore valide, doit revenir vers nous."
+python app.py agenda "RDV client 14h-15h ; appel fournisseur 14h30 ; dentiste 17h"
 python app.py doctor                                            # diagnostic de la config
 ```
 
@@ -195,14 +199,15 @@ Meta (WhatsApp > Configuration > Webhook).
 ### Notifications proactives (sortant automatique)
 
 Si `WHATSAPP_NOTIFY_TO` est défini dans `.env`, les commandes `triage`,
-`veille`, `veille-feeds`, `email`, `email-check` et `crm` envoient
-automatiquement un WhatsApp à ce numéro quand le résultat est jugé
-important :
+`veille`, `veille-feeds`, `email`, `email-check`, `crm` et `agenda`
+envoient automatiquement un WhatsApp à ce numéro quand le résultat est
+jugé important :
 
 - `triage` / `email` : urgence `"haute"`
 - `veille` / `veille-feeds` : au moins un élément dans `a_traiter`
 - `email-check` : au moins un message traité à urgence `"haute"`
 - `crm` : risque de churn `"eleve"`
+- `agenda` : au moins un conflit détecté
 
 Sans `WHATSAPP_NOTIFY_TO`, ce comportement est inactif (rien ne change).
 Un échec d'envoi de notification n'interrompt jamais la commande — il
