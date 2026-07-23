@@ -390,8 +390,11 @@ Chaque module suit le même contrat, dans `src/modules/<nom>.py` :
 
 1. Un `SYSTEM_PROMPT` qui impose une réponse JSON stricte (liste des
    champs attendus).
-2. `REQUIRED_KEYS` + une fonction `_parse_response(raw_text)` qui parse
-   et valide ce JSON, et lève une exception dédiée (`<Nom>Error`) sinon.
+2. `REQUIRED_KEYS` + une fonction `_parse_response(raw_text)` qui délègue
+   le parsing générique (JSON valide, objet, champs requis présents) à
+   `parse_json_object(raw_text, REQUIRED_KEYS, <Nom>Error)` dans
+   `src/modules/_client.py`, puis ajoute la validation spécifique au
+   module (types, valeurs autorisées...) et lève `<Nom>Error` sinon.
 3. Une fonction publique `<nom>(text, client=None)` qui appelle l'API et
    passe la réponse à `_parse_response`.
 4. Un fichier `test/test_<nom>.py` qui teste `_parse_response` sur des

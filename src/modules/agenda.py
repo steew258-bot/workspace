@@ -1,8 +1,6 @@
-import json
-
 import anthropic
 
-from src.modules._client import extract_text, get_client
+from src.modules._client import extract_text, get_client, parse_json_object
 
 SYSTEM_PROMPT = """Tu es un assistant d'agenda. Analyse la liste d'evenements et de \
 contraintes du jour fournie et reponds UNIQUEMENT avec un JSON valide, sans aucun texte \
@@ -25,17 +23,7 @@ class AgendaError(ValueError):
 
 
 def _parse_response(raw_text: str) -> dict:
-    try:
-        data = json.loads(raw_text)
-    except json.JSONDecodeError as exc:
-        raise AgendaError(f"Reponse non JSON: {raw_text!r}") from exc
-
-    if not isinstance(data, dict):
-        raise AgendaError(f"Reponse JSON invalide, objet attendu: {raw_text!r}")
-
-    missing = REQUIRED_KEYS - data.keys()
-    if missing:
-        raise AgendaError(f"Champs manquants dans la reponse: {missing}")
+    data = parse_json_object(raw_text, REQUIRED_KEYS, AgendaError)
 
     if not isinstance(data["conflits"], list):
         raise AgendaError("'conflits' doit etre une liste")

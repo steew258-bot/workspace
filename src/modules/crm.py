@@ -1,8 +1,6 @@
-import json
-
 import anthropic
 
-from src.modules._client import extract_text, get_client
+from src.modules._client import extract_text, get_client, parse_json_object
 from src.modules._skills import generate_file_with_skill
 
 SYSTEM_PROMPT = """Tu es un assistant de suivi client (CRM). Analyse les notes d'echanges \
@@ -26,17 +24,7 @@ class CrmError(ValueError):
 
 
 def _parse_response(raw_text: str) -> dict:
-    try:
-        data = json.loads(raw_text)
-    except json.JSONDecodeError as exc:
-        raise CrmError(f"Reponse non JSON: {raw_text!r}") from exc
-
-    if not isinstance(data, dict):
-        raise CrmError(f"Reponse JSON invalide, objet attendu: {raw_text!r}")
-
-    missing = REQUIRED_KEYS - data.keys()
-    if missing:
-        raise CrmError(f"Champs manquants dans la reponse: {missing}")
+    data = parse_json_object(raw_text, REQUIRED_KEYS, CrmError)
 
     if data["risque_churn"] not in VALID_RISQUE_CHURN:
         raise CrmError(f"risque_churn invalide: {data['risque_churn']!r}")

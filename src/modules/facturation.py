@@ -1,8 +1,6 @@
-import json
-
 import anthropic
 
-from src.modules._client import extract_text, get_client
+from src.modules._client import extract_text, get_client, parse_json_object
 from src.modules._skills import generate_file_with_skill
 
 SYSTEM_PROMPT = """Tu es un assistant de facturation. Analyse la description de prestation \
@@ -32,17 +30,7 @@ def _is_number_or_none(value) -> bool:
 
 
 def _parse_response(raw_text: str) -> dict:
-    try:
-        data = json.loads(raw_text)
-    except json.JSONDecodeError as exc:
-        raise FacturationError(f"Reponse non JSON: {raw_text!r}") from exc
-
-    if not isinstance(data, dict):
-        raise FacturationError(f"Reponse JSON invalide, objet attendu: {raw_text!r}")
-
-    missing = REQUIRED_KEYS - data.keys()
-    if missing:
-        raise FacturationError(f"Champs manquants dans la reponse: {missing}")
+    data = parse_json_object(raw_text, REQUIRED_KEYS, FacturationError)
 
     if not isinstance(data["lignes"], list) or not data["lignes"]:
         raise FacturationError("'lignes' doit etre une liste non vide")
