@@ -113,12 +113,18 @@ def main(argv: list[str] | None = None) -> None:
     email_send_parser.add_argument("to", help="Adresse email destinataire")
     email_send_parser.add_argument("subject", help="Objet de l'email")
     email_send_parser.add_argument("body", help="Corps de l'email")
+    email_send_parser.add_argument(
+        "--dry-run", action="store_true", help="Affiche l'email sans l'envoyer"
+    )
 
     whatsapp_parser = subparsers.add_parser(
         "whatsapp", help="Envoie un message WhatsApp via l'API Cloud de Meta"
     )
     whatsapp_parser.add_argument("to", help="Numero destinataire (format E.164, ex: +33600000000)")
     whatsapp_parser.add_argument("message", help="Contenu du message a envoyer")
+    whatsapp_parser.add_argument(
+        "--dry-run", action="store_true", help="Affiche le message sans l'envoyer"
+    )
 
     webhook_parser = subparsers.add_parser(
         "webhook", help="Demarre le serveur qui recoit les messages WhatsApp entrants"
@@ -158,10 +164,16 @@ def main(argv: list[str] | None = None) -> None:
             result = {"conflits": [], "creneaux_libres": [], "suggestions": []}
         notify_if_urgent("agenda", result)
     elif args.command == "whatsapp":
-        result = send_whatsapp_message(args.to, args.message)
+        if args.dry_run:
+            result = {"statut": "apercu", "to": args.to, "message": args.message}
+        else:
+            result = send_whatsapp_message(args.to, args.message)
     elif args.command == "email-send":
-        send_email(args.to, args.subject, args.body)
-        result = {"statut": "envoye", "to": args.to, "objet": args.subject}
+        if args.dry_run:
+            result = {"statut": "apercu", "to": args.to, "objet": args.subject, "corps": args.body}
+        else:
+            send_email(args.to, args.subject, args.body)
+            result = {"statut": "envoye", "to": args.to, "objet": args.subject}
     elif args.command == "facturation":
         result = facturation(args.text)
         if args.export_xlsx:

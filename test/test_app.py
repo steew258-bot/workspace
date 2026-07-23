@@ -345,6 +345,41 @@ def test_email_send_calls_smtp(capsys):
     assert result == {"statut": "envoye", "to": "a@exemple.com", "objet": "Sujet"}
 
 
+def test_email_send_dry_run_does_not_send(capsys):
+    with patch("app.send_email") as mocked_send:
+        main(["email-send", "a@exemple.com", "Sujet", "Corps", "--dry-run"])
+
+    mocked_send.assert_not_called()
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {
+        "statut": "apercu",
+        "to": "a@exemple.com",
+        "objet": "Sujet",
+        "corps": "Corps",
+    }
+
+
+def test_whatsapp_sends_message(capsys):
+    fake_result = {"messages": [{"id": "wamid.1"}]}
+    with patch("app.send_whatsapp_message", return_value=fake_result) as mocked:
+        main(["whatsapp", "+33600000000", "Bonjour"])
+
+    mocked.assert_called_once_with("+33600000000", "Bonjour")
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == {"messages": [{"id": "wamid.1"}]}
+
+
+def test_whatsapp_dry_run_does_not_send(capsys):
+    with patch("app.send_whatsapp_message") as mocked:
+        main(["whatsapp", "+33600000000", "Bonjour", "--dry-run"])
+
+    mocked.assert_not_called()
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {"statut": "apercu", "to": "+33600000000", "message": "Bonjour"}
+
+
 def test_agenda_check_with_events_runs_analysis(capsys):
     events = [{"titre": "RDV client", "debut": "14h", "fin": "15h"}]
     analyse = {
