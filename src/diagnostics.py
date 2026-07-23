@@ -1,4 +1,5 @@
 import os
+from collections.abc import Callable
 
 from dotenv import load_dotenv
 
@@ -21,6 +22,36 @@ VARS_WITH_USABLE_DEFAULTS = {
     "EMAIL_SMTP_HOST",
     "EMAIL_SMTP_PORT",
     "EMAIL_MAILBOX",
+}
+
+def _is_valid_email(value: str) -> bool:
+    local, _, domain = value.partition("@")
+    return bool(local) and "." in domain and not domain.startswith(".") and not domain.endswith(
+        "."
+    )
+
+
+def _is_valid_url(value: str) -> bool:
+    return value.startswith("http://") or value.startswith("https://")
+
+
+def _is_valid_port(value: str) -> bool:
+    return value.isdigit() and 0 < int(value) <= 65535
+
+
+def _is_valid_e164_phone(value: str) -> bool:
+    return value.startswith("+") and value[1:].isdigit() and len(value) >= 8
+
+
+# Validateurs de format optionnels, appliques en plus des verifications
+# "non vide" / "placeholder non remplace" : detecte une valeur non vide mais
+# manifestement mal saisie (email sans @, port non numerique...).
+FORMAT_VALIDATORS: dict[str, tuple[Callable[[str], bool], str]] = {
+    "EMAIL_ADDRESS": (_is_valid_email, "doit ressembler a une adresse email (ex: toi@exemple.com)"),
+    "WHATSAPP_API_URL": (_is_valid_url, "doit commencer par http:// ou https://"),
+    "EMAIL_IMAP_PORT": (_is_valid_port, "doit etre un numero de port valide (1-65535)"),
+    "EMAIL_SMTP_PORT": (_is_valid_port, "doit etre un numero de port valide (1-65535)"),
+    "WHATSAPP_NOTIFY_TO": (_is_valid_e164_phone, "doit etre au format E.164 (ex: +33600000000)"),
 }
 
 MODULE_REQUIREMENTS = {
@@ -62,12 +93,14 @@ def _check_var(name: str, example_values: dict[str, str]) -> str | None:
     if not value:
         return "manquante"
 
-    if name in VARS_WITH_USABLE_DEFAULTS:
-        return None
+    if name not in VARS_WITH_USABLE_DEFAULTS:
+        example = example_values.get(name, "").strip()
+        if example and value == example:
+            return "valeur d'exemple non remplacee"
 
-    example = example_values.get(name, "").strip()
-    if example and value == example:
-        return "valeur d'exemple non remplacee"
+    validator = FORMAT_VALIDATORS.get(name)
+    if validator is not None and not validator[0](value):
+        return f"format invalide : {validator[1]}"
 
     return None
 
@@ -94,10 +127,13 @@ def check() -> dict:
             "le repo) : la signature des webhooks entrants n'est pas verifiee, n'importe qui "
             "connaissant l'URL peut poster de faux messages."
         )
-    if not os.environ.get("WHATSAPP_NOTIFY_TO", "").strip():
+    notify_to_issue = _check_var("WHATSAPP_NOTIFY_TO", example_values)
+    if notify_to_issue == "manquante":
         avertissements.append(
             "WHATSAPP_NOTIFY_TO non definie : les notifications proactives sont desactivees."
         )
+    elif notify_to_issue is not None:
+        avertissements.append(f"WHATSAPP_NOTIFY_TO : {notify_to_issue}")
 
     avertissements.append(
         "facturation --export-xlsx, crm --export-xlsx et resume --export-docx utilisent les "

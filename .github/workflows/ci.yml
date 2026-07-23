@@ -18,3 +18,5 @@ jobs:
       - run: ruff check .
       - run: mypy app.py src scripts
       - run: pytest
+      - run: pip install pip-audit
+      - run: pip-audit -r requirements.txt

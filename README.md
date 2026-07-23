@@ -92,13 +92,16 @@ Chaque commande affiche un JSON structuré sur stdout.
 python app.py doctor
 ```
 
-Vérifie `.env` et indique, module par module, ce qui manque ou est
-resté à la valeur d'exemple de `.env.example` (donc pas vraiment
-configuré) — sans faire aucun appel réseau. Renvoie aussi des
-avertissements de sécurité (ex : `WHATSAPP_APP_SECRET` toujours à sa
-valeur d'exemple publique, `WHATSAPP_NOTIFY_TO` absente). Code de sortie
-`0` si tous les modules sont utilisables, `1` sinon — utilisable dans un
-script ou avant de lancer une automatisation.
+Vérifie `.env` et indique, module par module, ce qui manque, est resté à
+la valeur d'exemple de `.env.example` (donc pas vraiment configuré), ou a
+un format visiblement invalide (`EMAIL_ADDRESS` sans `@`,
+`WHATSAPP_API_URL` sans `http(s)://`, port non numérique,
+`WHATSAPP_NOTIFY_TO` pas au format E.164) — sans faire aucun appel
+réseau. Renvoie aussi des avertissements de sécurité (ex :
+`WHATSAPP_APP_SECRET` toujours à sa valeur d'exemple publique,
+`WHATSAPP_NOTIFY_TO` absente ou mal formée). Code de sortie `0` si tous
+les modules sont utilisables, `1` sinon — utilisable dans un script ou
+avant de lancer une automatisation.
 
 ## Génération de fichiers réels (Agent Skills)
 
@@ -355,6 +358,7 @@ les workflows fonctionnent.
 ruff check .
 mypy app.py src scripts
 pytest
+pip-audit -r requirements.txt   # scanne les dependances pour des CVE connues
 ```
 
 La CI (`.github/workflows/ci.yml`) lance ces trois commandes sur chaque
