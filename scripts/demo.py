@@ -61,6 +61,24 @@ DEMOS = [
         },
     },
     {
+        "module": "resume",
+        "commande": (
+            'python app.py resume "$(cat compte-rendu.txt)" --export-docx rapport.docx'
+        ),
+        "sortie": {
+            "resume": (
+                "Le projet avance conformement au planning ; deux points de blocage "
+                "restent a lever avant la livraison."
+            ),
+            "points_cles": ["Budget valide", "Delai serre sur le lot 2"],
+            "fichier_docx": "rapport.docx",
+        },
+        "note": (
+            "--export-docx genere un vrai document Word via les Agent Skills Anthropic "
+            "(fonctionnalite beta, cf. `python app.py doctor`)."
+        ),
+    },
+    {
         "module": "email",
         "commande": (
             'python app.py email "De: client@exemple.com\\nObjet: Panne serveur\\n\\n'
@@ -93,6 +111,24 @@ DEMOS = [
             "action": "Relancer par email dans 5 jours si pas de nouvelles",
             "risque_churn": "moyen",
         },
+    },
+    {
+        "module": "crm",
+        "commande": (
+            'python app.py crm "Appel du 12/07 : interesse mais budget pas encore '
+            'valide, doit revenir vers nous." --export-xlsx fiches/dupont.xlsx'
+        ),
+        "sortie": {
+            "statut": "a relancer",
+            "relance_a_faire": True,
+            "action": "Relancer par email dans 5 jours si pas de nouvelles",
+            "risque_churn": "moyen",
+            "fichier_xlsx": "fiches/dupont.xlsx",
+        },
+        "note": (
+            "--export-xlsx genere une vraie fiche de suivi client Excel via les Agent "
+            "Skills Anthropic (fonctionnalite beta, cf. `python app.py doctor`)."
+        ),
     },
     {
         "module": "agenda",

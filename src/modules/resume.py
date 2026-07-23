@@ -3,6 +3,7 @@ import json
 import anthropic
 
 from src.modules._client import extract_text, get_client
+from src.modules._skills import generate_file_with_skill
 
 SYSTEM_PROMPT = """Tu es un assistant de synthese. Analyse le texte long fourni (compte-rendu, \
 document, fil d'emails...) et reponds UNIQUEMENT avec un JSON valide, sans aucun texte autour, \
@@ -52,3 +53,19 @@ def resume(text: str, client: anthropic.Anthropic | None = None) -> dict:
         messages=[{"role": "user", "content": text}],
     )
     return _parse_response(extract_text(response))
+
+
+def resume_export_docx(
+    data: dict, output_path: str, client: anthropic.Anthropic | None = None
+) -> str:
+    """Genere un vrai rapport .docx a partir d'un resume deja structure par
+    resume(). Fonctionnalite beta (Agent Skills), consomme du temps de
+    conteneur d'execution de code : voir `python app.py doctor`."""
+    points_text = "\n".join(f"- {point}" for point in data["points_cles"])
+    prompt = (
+        "Cree un document Word (.docx) avec un titre, un paragraphe de resume, "
+        "puis une liste a puces des points cles.\n"
+        f"Resume : {data['resume']}\n"
+        f"Points cles :\n{points_text}"
+    )
+    return generate_file_with_skill(prompt, "docx", output_path, client=client)

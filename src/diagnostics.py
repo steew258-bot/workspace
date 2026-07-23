@@ -100,9 +100,10 @@ def check() -> dict:
         )
 
     avertissements.append(
-        "facturation --export-xlsx utilise les Agent Skills Anthropic (fonctionnalite beta) : "
-        "chaque generation de devis consomme du temps de conteneur d'execution de code, "
-        "gratuit jusqu'a un quota mensuel puis facture par l'API Anthropic."
+        "facturation --export-xlsx, crm --export-xlsx et resume --export-docx utilisent les "
+        "Agent Skills Anthropic (fonctionnalite beta) : chaque generation de fichier consomme "
+        "du temps de conteneur d'execution de code, gratuit jusqu'a un quota mensuel puis "
+        "facture par l'API Anthropic."
     )
 
     return {"modules": modules, "avertissements": avertissements}

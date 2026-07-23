@@ -124,6 +124,82 @@ def test_facturation_without_export_flag_skips_export(capsys):
     assert json.loads(captured.out) == devis
 
 
+def test_crm_export_xlsx_flag_adds_file_path(capsys):
+    fiche = {
+        "statut": "actif",
+        "relance_a_faire": False,
+        "action": "a",
+        "risque_churn": "faible",
+    }
+
+    with (
+        patch("app.crm", return_value=fiche) as mocked_crm,
+        patch("app.crm_export_xlsx", return_value="fiche.xlsx") as mocked_export,
+        patch("app.notify_if_urgent") as mocked_notify,
+    ):
+        main(["crm", "un texte quelconque", "--export-xlsx", "fiche.xlsx"])
+
+    mocked_crm.assert_called_once_with("un texte quelconque")
+    mocked_export.assert_called_once_with(fiche, "fiche.xlsx")
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {**fiche, "fichier_xlsx": "fiche.xlsx"}
+    mocked_notify.assert_called_once_with("crm", result)
+
+
+def test_crm_without_export_flag_skips_export(capsys):
+    fiche = {
+        "statut": "actif",
+        "relance_a_faire": False,
+        "action": "a",
+        "risque_churn": "faible",
+    }
+
+    with (
+        patch("app.crm", return_value=fiche),
+        patch("app.crm_export_xlsx") as mocked_export,
+        patch("app.notify_if_urgent"),
+    ):
+        main(["crm", "un texte quelconque"])
+
+    mocked_export.assert_not_called()
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == fiche
+
+
+def test_resume_export_docx_flag_adds_file_path(capsys):
+    synthese = {"resume": "r", "points_cles": ["a"]}
+
+    with (
+        patch("app.resume", return_value=synthese) as mocked_resume,
+        patch("app.resume_export_docx", return_value="rapport.docx") as mocked_export,
+        patch("app.notify_if_urgent") as mocked_notify,
+    ):
+        main(["resume", "un texte quelconque", "--export-docx", "rapport.docx"])
+
+    mocked_resume.assert_called_once_with("un texte quelconque")
+    mocked_export.assert_called_once_with(synthese, "rapport.docx")
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {**synthese, "fichier_docx": "rapport.docx"}
+    mocked_notify.assert_called_once_with("resume", result)
+
+
+def test_resume_without_export_flag_skips_export(capsys):
+    synthese = {"resume": "r", "points_cles": ["a"]}
+
+    with (
+        patch("app.resume", return_value=synthese),
+        patch("app.resume_export_docx") as mocked_export,
+        patch("app.notify_if_urgent"),
+    ):
+        main(["resume", "un texte quelconque"])
+
+    mocked_export.assert_not_called()
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == synthese
+
+
 def test_email_check_processes_and_marks_read(capsys):
     messages = [
         {"uid": "1", "de": "a@exemple.com", "objet": "Sujet 1", "corps": "Corps 1"},

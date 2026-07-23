@@ -17,21 +17,24 @@ référence technique complète.
 - **planification** — tâches et contraintes du jour → ordre optimisé et
   tâche à plus fort levier
 - **resume** — texte long (compte-rendu, doc, fil d'emails) → résumé court
-  + points clés
+  + points clés. Avec `--export-docx`, génère en plus un vrai document
+  Word (voir "Génération de fichiers réels" plus bas)
 - **email** — email (expéditeur/objet/corps) → urgence, action, brouillon
   de réponse ; connecté en réel à une boîte mail (lecture IMAP des non-lus,
   envoi SMTP)
 - **recherche** — question en langage naturel → réponse synthétique avec
   sources, via une recherche web en temps réel (API Perplexity)
 - **crm** — notes d'échanges avec un client/prospect → statut du dossier,
-  relance à faire, prochaine action, risque de churn
+  relance à faire, prochaine action, risque de churn. Avec
+  `--export-xlsx`, génère en plus une vraie fiche Excel (voir
+  "Génération de fichiers réels" plus bas)
 - **agenda** — événements et contraintes du jour → conflits détectés,
   créneaux libres, suggestions de replanification ; `agenda-check`
   connecte ça en réel à Google Calendar (OAuth)
 - **facturation** — description de prestation → brouillon de devis
   structuré (lignes, quantités, prix) ; n'invente jamais de prix non
   précisé dans le texte. Avec `--export-xlsx`, génère en plus un vrai
-  fichier Excel (voir la section "Devis Excel réel" plus bas)
+  fichier Excel (voir "Génération de fichiers réels" plus bas)
 
 ## Prérequis
 
@@ -66,12 +69,14 @@ python app.py veille "$(cat docs/veille-sources.txt)"          # liste manuelle
 python app.py veille-feeds docs/veille-feeds.txt               # scraping RSS reel
 python app.py planification "Repondre a 3 clients, preparer un devis, relancer un impaye"
 python app.py resume "$(cat compte-rendu.txt)"
+python app.py resume "..." --export-docx rapport.docx           # vrai document Word
 python app.py email "De: client@exemple.com\nObjet: Urgent\n\nMerci de rappeler avant 18h."
 python app.py email-check
 python app.py email-send client@exemple.com "Re: Urgent" "C'est note, je vous rappelle."
 python app.py whatsapp +33600000000 "Message a envoyer"
 python app.py recherche "Quelles sont les dernieres annonces d'Anthropic ?"
 python app.py crm "Appel du 12/07 : interesse mais budget pas encore valide, doit revenir vers nous."
+python app.py crm "..." --export-xlsx fiches/dupont.xlsx        # vraie fiche Excel
 python app.py agenda "RDV client 14h-15h ; appel fournisseur 14h30 ; dentiste 17h"
 python app.py agenda-check                                      # vrais evenements Google Calendar
 python app.py facturation "2 jours de dev a 500e/jour pour le client Dupont"
@@ -95,23 +100,31 @@ valeur d'exemple publique, `WHATSAPP_NOTIFY_TO` absente). Code de sortie
 `0` si tous les modules sont utilisables, `1` sinon — utilisable dans un
 script ou avant de lancer une automatisation.
 
-## Devis Excel réel (`facturation --export-xlsx`)
+## Génération de fichiers réels (Agent Skills)
 
-`facturation` renvoie normalement un brouillon de devis en JSON. Avec
-`--export-xlsx`, il génère en plus un vrai fichier Excel via les **Agent
-Skills** d'Anthropic (fonctionnalité beta) : tableau des lignes (désignation,
-quantité, prix unitaire, total par ligne) et total général.
+Trois modules peuvent, en plus de leur JSON habituel, générer un vrai
+fichier via les **Agent Skills** d'Anthropic (fonctionnalité beta) — plus
+besoin de retaper le résultat dans un tableur ou un traitement de texte :
+
+| Module        | Flag            | Fichier généré                      |
+| ------------- | --------------- | ------------------------------------ |
+| `facturation` | `--export-xlsx` | Devis Excel (lignes, prix, total)    |
+| `crm`         | `--export-xlsx` | Fiche de suivi client Excel          |
+| `resume`      | `--export-docx` | Rapport Word (résumé + points clés)  |
 
 ```bash
 python app.py facturation "2 jours de dev a 500e/jour pour le client Dupont" \
   --export-xlsx factures/dupont.xlsx
+python app.py crm "Appel du 12/07 : interesse mais budget pas encore valide" \
+  --export-xlsx fiches/dupont.xlsx
+python app.py resume "$(cat compte-rendu.txt)" --export-docx rapport.docx
 ```
 
-Le JSON de sortie contient alors une clé `fichier_xlsx` avec le chemin du
-fichier généré. Le dossier de destination (`factures/` dans l'exemple) est
-créé automatiquement s'il n'existe pas ; il est ignoré par git
-(`.gitignore`) puisque son contenu est propre à chaque utilisateur du
-template.
+Le JSON de sortie contient alors une clé `fichier_xlsx` ou `fichier_docx`
+avec le chemin du fichier généré. Le dossier de destination est créé
+automatiquement s'il n'existe pas ; les dossiers d'export habituels
+(`factures/`, `fiches/`) sont ignorés par git (`.gitignore`) puisque leur
+contenu est propre à chaque utilisateur du template.
 
 **Coût** : cette fonctionnalité consomme du temps de conteneur d'exécution
 de code sur l'API Anthropic — gratuit jusqu'à un quota mensuel, puis
@@ -387,6 +400,13 @@ Chaque module suit le même contrat, dans `src/modules/<nom>.py` :
 5. Un enregistrement dans `app.py` (import + sous-parser argparse +
    entrée dans le dict `handlers`) et un cas ajouté dans
    `test/test_app.py`.
+
+Optionnel : si le module doit aussi générer un vrai fichier (Excel, Word...),
+reprendre le pattern `<nom>_export_<format>(data, output_path, client=None)`
+utilisé par `facturation`/`crm`/`resume` (voir "Génération de fichiers
+réels" plus haut), qui délègue à `generate_file_with_skill()` dans
+`src/modules/_skills.py` — pas besoin de redériver la logique d'appel aux
+Agent Skills.
 
 ## Licence
 

@@ -8,14 +8,14 @@ from datetime import date
 from src.diagnostics import check as check_environment
 from src.modules.agenda import agenda
 from src.modules.calendar_client import fetch_events
-from src.modules.crm import crm
+from src.modules.crm import crm, crm_export_xlsx
 from src.modules.email import email as email_triage
 from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
 from src.modules.facturation import facturation, facturation_export_xlsx
 from src.modules.feeds import fetch_items_text
 from src.modules.planification import planification
 from src.modules.recherche import recherche
-from src.modules.resume import resume
+from src.modules.resume import resume, resume_export_docx
 from src.modules.triage import triage
 from src.modules.veille import veille
 from src.modules.whatsapp import send_whatsapp_message
@@ -50,6 +50,11 @@ def main(argv: list[str] | None = None) -> None:
         "resume", help="Resume un texte long en points cles"
     )
     resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
+    resume_parser.add_argument(
+        "--export-docx",
+        default=None,
+        help="Chemin du fichier .docx a generer pour ce resume (beta, cf. doctor)",
+    )
 
     facturation_parser = subparsers.add_parser(
         "facturation", help="Genere un brouillon de devis structure a partir d'une description"
@@ -78,6 +83,11 @@ def main(argv: list[str] | None = None) -> None:
         "crm", help="Analyse des notes d'echanges client et propose statut/action/risque"
     )
     crm_parser.add_argument("text", help="Notes d'echanges avec le client ou prospect")
+    crm_parser.add_argument(
+        "--export-xlsx",
+        default=None,
+        help="Chemin du fichier .xlsx a generer pour cette fiche client (beta, cf. doctor)",
+    )
 
     recherche_parser = subparsers.add_parser(
         "recherche", help="Recherche web en temps reel via Perplexity, avec sources"
@@ -158,6 +168,18 @@ def main(argv: list[str] | None = None) -> None:
             chemin = facturation_export_xlsx(result, args.export_xlsx)
             result = {**result, "fichier_xlsx": chemin}
         notify_if_urgent("facturation", result)
+    elif args.command == "crm":
+        result = crm(args.text)
+        if args.export_xlsx:
+            chemin = crm_export_xlsx(result, args.export_xlsx)
+            result = {**result, "fichier_xlsx": chemin}
+        notify_if_urgent("crm", result)
+    elif args.command == "resume":
+        result = resume(args.text)
+        if args.export_docx:
+            chemin = resume_export_docx(result, args.export_docx)
+            result = {**result, "fichier_docx": chemin}
+        notify_if_urgent("resume", result)
     elif args.command == "email-check":
         mailbox = args.mailbox or os.environ.get("EMAIL_MAILBOX") or "INBOX"
         messages = fetch_unread(mailbox=mailbox, max_messages=args.max)
@@ -188,9 +210,7 @@ def main(argv: list[str] | None = None) -> None:
             "email": email_triage,
             "veille": veille,
             "planification": planification,
-            "resume": resume,
             "recherche": recherche,
-            "crm": crm,
             "agenda": agenda,
         }
         result = handlers[args.command](args.text)

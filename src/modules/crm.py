@@ -3,6 +3,7 @@ import json
 import anthropic
 
 from src.modules._client import extract_text, get_client
+from src.modules._skills import generate_file_with_skill
 
 SYSTEM_PROMPT = """Tu es un assistant de suivi client (CRM). Analyse les notes d'echanges \
 fournies (emails, appels, reunions...) avec un client ou prospect et reponds UNIQUEMENT avec \
@@ -55,3 +56,20 @@ def crm(text: str, client: anthropic.Anthropic | None = None) -> dict:
         messages=[{"role": "user", "content": text}],
     )
     return _parse_response(extract_text(response))
+
+
+def crm_export_xlsx(
+    data: dict, output_path: str, client: anthropic.Anthropic | None = None
+) -> str:
+    """Genere une vraie fiche de suivi client .xlsx a partir d'une analyse deja
+    structuree par crm(). Fonctionnalite beta (Agent Skills), consomme du temps
+    de conteneur d'execution de code : voir `python app.py doctor`."""
+    prompt = (
+        "Cree une fiche de suivi client au format Excel (.xlsx), avec une ligne "
+        "par champ (Statut, Relance a faire, Action, Risque de churn).\n"
+        f"Statut : {data['statut']}\n"
+        f"Relance a faire : {'oui' if data['relance_a_faire'] else 'non'}\n"
+        f"Action : {data['action']}\n"
+        f"Risque de churn : {data['risque_churn']}"
+    )
+    return generate_file_with_skill(prompt, "xlsx", output_path, client=client)
