@@ -3,6 +3,8 @@ import urllib.request
 
 import feedparser
 
+from src.retry import call_with_retry, is_transient_url_error
+
 DEFAULT_MAX_ITEMS_PER_FEED = 5
 FETCH_TIMEOUT_SECONDS = 10
 
@@ -19,8 +21,12 @@ def _parse_feeds_file(path: str) -> list[str]:
 
 def _fetch_feed(url_or_content: str) -> feedparser.FeedParserDict:
     if url_or_content.startswith(("http://", "https://")):
-        with urllib.request.urlopen(url_or_content, timeout=FETCH_TIMEOUT_SECONDS) as response:
-            content = response.read()
+
+        def _do_request() -> bytes:
+            with urllib.request.urlopen(url_or_content, timeout=FETCH_TIMEOUT_SECONDS) as response:
+                return response.read()
+
+        content = call_with_retry(_do_request, is_retryable=is_transient_url_error)
         return feedparser.parse(content)
     return feedparser.parse(url_or_content)
 
