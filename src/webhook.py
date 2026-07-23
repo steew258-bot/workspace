@@ -42,18 +42,30 @@ def _verify_signature(payload: bytes, signature_header: str | None) -> bool:
     return hmac.compare_digest(expected, received)
 
 
-def _extract_messages(payload: dict) -> list[dict]:
+def _extract_messages(payload) -> list[dict]:
+    if not isinstance(payload, dict):
+        return []
+
     messages = []
     for entry in payload.get("entry", []):
+        if not isinstance(entry, dict):
+            continue
         for change in entry.get("changes", []):
-            for message in change.get("value", {}).get("messages", []):
-                messages.append(message)
+            if not isinstance(change, dict):
+                continue
+            value = change.get("value")
+            if not isinstance(value, dict):
+                continue
+            for message in value.get("messages", []):
+                if isinstance(message, dict):
+                    messages.append(message)
     return messages
 
 
 def _handle_message(message: dict) -> None:
     sender = message.get("from")
-    text = message.get("text", {}).get("body")
+    text_field = message.get("text")
+    text = text_field.get("body") if isinstance(text_field, dict) else None
     if not sender or not text:
         return
 

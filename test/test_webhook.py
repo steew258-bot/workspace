@@ -138,6 +138,54 @@ def test_receive_triage_failure_does_not_leak_exception(monkeypatch, client, cap
     assert "cle API secrete invalide" in capsys.readouterr().err
 
 
+def test_receive_non_object_payload_does_not_crash(monkeypatch, client):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+
+    response = client.post(
+        "/webhook",
+        data=json.dumps([1, 2, 3]),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+
+
+def test_receive_non_dict_message_item_is_skipped(monkeypatch, client):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+
+    payload = {"entry": [{"changes": [{"value": {"messages": ["pas-un-dict"]}}]}]}
+
+    with patch("src.webhook.send_whatsapp_message") as mocked_send:
+        response = client.post(
+            "/webhook",
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+    assert response.status_code == 200
+    mocked_send.assert_not_called()
+
+
+def test_receive_message_with_non_dict_text_is_ignored(monkeypatch, client):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+
+    payload = {
+        "entry": [
+            {"changes": [{"value": {"messages": [{"from": "336000", "text": "pas-un-dict"}]}}]}
+        ]
+    }
+
+    with patch("src.webhook.send_whatsapp_message") as mocked_send:
+        response = client.post(
+            "/webhook",
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+    assert response.status_code == 200
+    mocked_send.assert_not_called()
+
+
 def test_receive_with_valid_signature(monkeypatch, client):
     monkeypatch.setenv("WHATSAPP_APP_SECRET", "app-secret")
 
