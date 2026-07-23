@@ -267,6 +267,17 @@ pytest
 La CI (`.github/workflows/ci.yml`) lance ces deux commandes sur chaque
 push/PR vers `master`.
 
+## Packaging pour distribution
+
+```bash
+python scripts/package_for_sale.py
+```
+
+Génère `dist/ops-agent-<date>.zip` : une copie propre du repo, sans
+`.env` (jamais de vrais secrets dans l'archive), `.git`, `.venv` ni
+caches. Inclut `.env.example`. C'est ce zip qui est fait pour être
+uploadé tel quel sur une plateforme de vente (Gumroad...).
+
 ## Ajouter un module
 
 Chaque module suit le même contrat, dans `src/modules/<nom>.py` :
