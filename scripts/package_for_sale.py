@@ -22,8 +22,10 @@ EXCLUDE_DIR_NAMES = {
     "venv",
     ".ruff_cache",
     ".pytest_cache",
+    ".mypy_cache",
     ".claude",
     "dist",
+    "factures",
 }
 
 EXCLUDE_FILE_NAMES = {".env"}
