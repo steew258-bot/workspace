@@ -3,9 +3,11 @@ import json
 import os
 import sys
 from collections.abc import Callable
+from datetime import date
 
 from src.diagnostics import check as check_environment
 from src.modules.agenda import agenda
+from src.modules.calendar_client import fetch_events
 from src.modules.crm import crm
 from src.modules.email import email as email_triage
 from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
@@ -58,6 +60,14 @@ def main(argv: list[str] | None = None) -> None:
         "agenda", help="Analyse evenements/contraintes du jour: conflits, creneaux, suggestions"
     )
     agenda_parser.add_argument("text", help="Evenements et contraintes du jour")
+
+    agenda_check_parser = subparsers.add_parser(
+        "agenda-check",
+        help="Recupere les evenements du jour sur Google Calendar et detecte les conflits",
+    )
+    agenda_check_parser.add_argument(
+        "--date", default=None, help="Date a verifier au format AAAA-MM-JJ (defaut: aujourd'hui)"
+    )
 
     crm_parser = subparsers.add_parser(
         "crm", help="Analyse des notes d'echanges client et propose statut/action/risque"
@@ -123,6 +133,15 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "veille-feeds":
         result = veille(fetch_items_text(args.feeds_file))
         notify_if_urgent("veille-feeds", result)
+    elif args.command == "agenda-check":
+        day = date.fromisoformat(args.date) if args.date else None
+        events = fetch_events(day=day)
+        if events:
+            text = "\n".join(f"{e['titre']}: {e['debut']} - {e['fin']}" for e in events)
+            result = agenda(text)
+        else:
+            result = {"conflits": [], "creneaux_libres": [], "suggestions": []}
+        notify_if_urgent("agenda", result)
     elif args.command == "whatsapp":
         result = send_whatsapp_message(args.to, args.message)
     elif args.command == "email-send":

@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
+from src.modules.calendar_client import REQUIRED_ENV_VARS as GOOGLE_REQUIRED_VARS
 from src.modules.email_client import REQUIRED_IMAP_VARS, REQUIRED_SMTP_VARS
 from src.modules.recherche import REQUIRED_ENV_VARS as RECHERCHE_REQUIRED_VARS
 from src.modules.whatsapp import REQUIRED_ENV_VARS as WHATSAPP_REQUIRED_VARS
@@ -32,6 +33,7 @@ MODULE_REQUIREMENTS = {
     "crm": ("ANTHROPIC_API_KEY",),
     "agenda": ("ANTHROPIC_API_KEY",),
     "facturation": ("ANTHROPIC_API_KEY",),
+    "agenda-check": ("ANTHROPIC_API_KEY", *GOOGLE_REQUIRED_VARS),
     "email-check": ("ANTHROPIC_API_KEY", *REQUIRED_IMAP_VARS),
     "email-send": REQUIRED_SMTP_VARS,
     "recherche": RECHERCHE_REQUIRED_VARS,

@@ -26,8 +26,8 @@ référence technique complète.
 - **crm** — notes d'échanges avec un client/prospect → statut du dossier,
   relance à faire, prochaine action, risque de churn
 - **agenda** — événements et contraintes du jour → conflits détectés,
-  créneaux libres, suggestions de replanification (analyse texte ; pas
-  encore connecté à un vrai calendrier)
+  créneaux libres, suggestions de replanification ; `agenda-check`
+  connecte ça en réel à Google Calendar (OAuth)
 - **facturation** — description de prestation → brouillon de devis
   structuré (lignes, quantités, prix) ; n'invente jamais de prix non
   précisé dans le texte
@@ -72,6 +72,7 @@ python app.py whatsapp +33600000000 "Message a envoyer"
 python app.py recherche "Quelles sont les dernieres annonces d'Anthropic ?"
 python app.py crm "Appel du 12/07 : interesse mais budget pas encore valide, doit revenir vers nous."
 python app.py agenda "RDV client 14h-15h ; appel fournisseur 14h30 ; dentiste 17h"
+python app.py agenda-check                                      # vrais evenements Google Calendar
 python app.py facturation "2 jours de dev a 500e/jour pour le client Dupont"
 python app.py doctor                                            # diagnostic de la config
 ```
@@ -110,6 +111,56 @@ Renvoie `{"reponse": "...", "sources": ["<url>", ...]}`.
 Nécessite dans `.env` :
 
 - `PERPLEXITY_API_KEY` (perplexity.ai/settings/api)
+
+## Agenda
+
+`agenda` (analyse manuelle) fonctionne avec la seule clé Anthropic —
+colle une liste d'événements en texte libre, reçois conflits/créneaux
+libres/suggestions. `agenda-check` va plus loin : il lit tes vrais
+événements du jour sur **Google Calendar** avant de lancer la même
+analyse. Cette seconde partie demande une configuration OAuth 2.0, plus
+lourde que les autres intégrations (mot de passe d'application ou clé
+API simple) — compte une dizaine de minutes la première fois.
+
+```bash
+python app.py agenda "RDV client 14h-15h ; appel fournisseur 14h30 ; dentiste 17h"
+python app.py agenda-check                    # aujourd'hui
+python app.py agenda-check --date 2026-08-06   # une date precise
+```
+
+### Configuration de `agenda-check`
+
+1. Sur [console.cloud.google.com](https://console.cloud.google.com),
+   crée un projet (ou réutilise un projet existant).
+2. **APIs & Services → Library** : active **Google Calendar API**.
+3. **APIs & Services → OAuth consent screen** : configure un écran de
+   consentement en mode "External" (ou "Internal" si tu as un Google
+   Workspace) ; en mode test, ajoute ton propre compte Google comme
+   utilisateur de test.
+4. **APIs & Services → Credentials → Create Credentials → OAuth client
+   ID**, type **Application de bureau**. Note le Client ID et le Client
+   Secret.
+5. Édite les identifiants créés et ajoute exactement cette URI de
+   redirection autorisée : `http://localhost:8765/oauth2callback`
+6. Renseigne dans `.env` :
+
+   ```
+   GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   ```
+
+7. Lance l'autorisation unique :
+
+   ```bash
+   python scripts/google_oauth_setup.py
+   ```
+
+   Une page Google s'ouvre dans ton navigateur ; après acceptation, le
+   script affiche un `GOOGLE_REFRESH_TOKEN` à copier dans `.env`. Ce
+   token ne change plus ensuite (sauf révocation manuelle de l'accès
+   sur [myaccount.google.com/permissions](https://myaccount.google.com/permissions)).
+
+`python app.py doctor` confirme quand tout est en place.
 
 ## Email
 

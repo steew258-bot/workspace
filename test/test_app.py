@@ -224,3 +224,53 @@ def test_email_send_calls_smtp(capsys):
     captured = capsys.readouterr()
     result = json.loads(captured.out)
     assert result == {"statut": "envoye", "to": "a@exemple.com", "objet": "Sujet"}
+
+
+def test_agenda_check_with_events_runs_analysis(capsys):
+    events = [{"titre": "RDV client", "debut": "14h", "fin": "15h"}]
+    analyse = {
+        "conflits": [{"evenements": ["RDV client", "Appel"], "raison": "meme creneau"}],
+        "creneaux_libres": [],
+        "suggestions": [],
+    }
+
+    with (
+        patch("app.fetch_events", return_value=events) as mocked_fetch,
+        patch("app.agenda", return_value=analyse) as mocked_agenda,
+        patch("app.notify_if_urgent") as mocked_notify,
+    ):
+        main(["agenda-check"])
+
+    mocked_fetch.assert_called_once_with(day=None)
+    mocked_agenda.assert_called_once()
+    assert "RDV client" in mocked_agenda.call_args[0][0]
+    mocked_notify.assert_called_once_with("agenda", analyse)
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == analyse
+
+
+def test_agenda_check_without_events_skips_analysis(capsys):
+    with (
+        patch("app.fetch_events", return_value=[]),
+        patch("app.agenda") as mocked_agenda,
+        patch("app.notify_if_urgent") as mocked_notify,
+    ):
+        main(["agenda-check"])
+
+    mocked_agenda.assert_not_called()
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {"conflits": [], "creneaux_libres": [], "suggestions": []}
+    mocked_notify.assert_called_once_with("agenda", result)
+
+
+def test_agenda_check_with_date_argument(capsys):
+    from datetime import date
+
+    with (
+        patch("app.fetch_events", return_value=[]) as mocked_fetch,
+        patch("app.notify_if_urgent"),
+    ):
+        main(["agenda-check", "--date", "2026-08-06"])
+
+    mocked_fetch.assert_called_once_with(day=date(2026, 8, 6))
