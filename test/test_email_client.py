@@ -145,12 +145,50 @@ def test_fetch_unread_connection_error(monkeypatch):
     monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.exemple.com")
     monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
     monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+    monkeypatch.setattr("src.retry.time.sleep", lambda seconds: None)
 
     with (
         patch("src.modules.email_client.imaplib.IMAP4_SSL", side_effect=OSError("boom")),
         pytest.raises(EmailClientError),
     ):
         fetch_unread()
+
+
+def test_fetch_unread_retries_transient_connection_error_then_succeeds(monkeypatch):
+    monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.exemple.com")
+    monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
+    monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+    monkeypatch.setattr("src.retry.time.sleep", lambda seconds: None)
+
+    fake_connection = MagicMock()
+    fake_connection.search.return_value = ("OK", [b""])
+
+    with patch(
+        "src.modules.email_client.imaplib.IMAP4_SSL",
+        side_effect=[OSError("boom"), fake_connection],
+    ) as mocked_ssl:
+        fetch_unread()
+
+    assert mocked_ssl.call_count == 2
+
+
+def test_send_email_retries_transient_connection_error_then_succeeds(monkeypatch):
+    monkeypatch.setenv("EMAIL_SMTP_HOST", "smtp.exemple.com")
+    monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
+    monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+    monkeypatch.setattr("src.retry.time.sleep", lambda seconds: None)
+
+    fake_connection = MagicMock()
+    fake_connection.__enter__.return_value = fake_connection
+
+    with patch(
+        "src.modules.email_client.smtplib.SMTP",
+        side_effect=[OSError("boom"), fake_connection],
+    ) as mocked_smtp:
+        send_email("client@exemple.com", "Sujet", "Corps")
+
+    assert mocked_smtp.call_count == 2
+    fake_connection.send_message.assert_called_once()
 
 
 def test_mark_as_read_stores_flags(monkeypatch):
@@ -223,5 +261,9 @@ def test_send_email_smtp_error_raises_client_error(monkeypatch):
 
     with patch(
         "src.modules.email_client.smtplib.SMTP", side_effect=smtplib.SMTPException("boom")
-    ), pytest.raises(EmailClientError):
+    ) as mocked_smtp, pytest.raises(EmailClientError):
         send_email("client@exemple.com", "Sujet", "Corps")
+
+    # SMTPException herite d'OSError en Python 3 : verifie qu'on ne la retente
+    # pas comme une simple erreur reseau transitoire (echec d'auth != coupure).
+    assert mocked_smtp.call_count == 1

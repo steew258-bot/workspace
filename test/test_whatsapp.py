@@ -57,6 +57,28 @@ def test_send_whatsapp_message_api_error(monkeypatch):
         send_whatsapp_message("+33600000000", "Bonjour")
 
 
+def test_send_whatsapp_message_retries_transient_connection_error_then_succeeds(monkeypatch):
+    import urllib.error
+
+    monkeypatch.setenv("WHATSAPP_API_URL", "https://graph.facebook.com/v20.0")
+    monkeypatch.setenv("WHATSAPP_PHONE_NUMBER_ID", "123456")
+    monkeypatch.setenv("WHATSAPP_ACCESS_TOKEN", "token")
+    monkeypatch.setattr("src.retry.time.sleep", lambda seconds: None)
+
+    fake_response = MagicMock()
+    fake_response.read.return_value = json.dumps({"messages": [{"id": "wamid.abc"}]}).encode()
+    fake_response.__enter__.return_value = fake_response
+
+    with patch(
+        "src.modules.whatsapp.urllib.request.urlopen",
+        side_effect=[urllib.error.URLError("connection refused"), fake_response],
+    ) as mocked:
+        result = send_whatsapp_message("+33600000000", "Bonjour")
+
+    assert result == {"messages": [{"id": "wamid.abc"}]}
+    assert mocked.call_count == 2
+
+
 def test_send_whatsapp_message_non_json_response(monkeypatch):
     monkeypatch.setenv("WHATSAPP_API_URL", "https://graph.facebook.com/v20.0")
     monkeypatch.setenv("WHATSAPP_PHONE_NUMBER_ID", "123456")

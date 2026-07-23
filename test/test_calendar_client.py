@@ -57,6 +57,23 @@ def test_fetch_events_success(monkeypatch):
     assert events[0]["debut"] == "2026-08-06T14:00:00+04:00"
 
 
+def test_fetch_events_retries_transient_connection_error_then_succeeds(monkeypatch):
+    _set_env(monkeypatch)
+    monkeypatch.setattr("src.retry.time.sleep", lambda seconds: None)
+
+    token_response = _fake_response({"access_token": "fresh-token"})
+    events_response = _fake_response({"items": []})
+
+    with patch(
+        "src.modules.calendar_client.urllib.request.urlopen",
+        side_effect=[urllib.error.URLError("connection refused"), token_response, events_response],
+    ) as mocked:
+        events = fetch_events(day=date(2026, 8, 6))
+
+    assert events == []
+    assert mocked.call_count == 3
+
+
 def test_fetch_events_token_refresh_error(monkeypatch):
     _set_env(monkeypatch)
 

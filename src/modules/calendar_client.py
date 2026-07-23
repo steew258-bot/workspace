@@ -7,6 +7,8 @@ from datetime import date, datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 
+from src.retry import call_with_retry, is_transient_url_error
+
 load_dotenv()
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -45,9 +47,12 @@ def _get_access_token() -> str:
 
     request = urllib.request.Request(TOKEN_URL, data=payload, method="POST")
 
-    try:
+    def _do_request() -> bytes:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-            body = response.read()
+            return response.read()
+
+    try:
+        body = call_with_retry(_do_request, is_retryable=is_transient_url_error)
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise CalendarClientError(
@@ -94,9 +99,12 @@ def fetch_events(day: date | None = None, calendar_id: str = DEFAULT_CALENDAR_ID
     url = EVENTS_URL_TEMPLATE.format(calendar_id=urllib.parse.quote(calendar_id)) + "?" + query
     request = urllib.request.Request(url, headers={"Authorization": f"Bearer {access_token}"})
 
-    try:
+    def _do_request() -> bytes:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-            body = response.read()
+            return response.read()
+
+    try:
+        body = call_with_retry(_do_request, is_retryable=is_transient_url_error)
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise CalendarClientError(

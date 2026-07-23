@@ -11,6 +11,8 @@ from typing import cast
 
 from dotenv import load_dotenv
 
+from src.retry import call_with_retry
+
 load_dotenv()
 
 IMAP_TIMEOUT_SECONDS = 10
@@ -96,13 +98,17 @@ def _connect_imap(mailbox: str) -> imaplib.IMAP4_SSL:
     values = _get_env(REQUIRED_IMAP_VARS)
     host = values["EMAIL_IMAP_HOST"]
     port = int(os.environ.get("EMAIL_IMAP_PORT") or "993")
-    try:
+
+    def _connect() -> imaplib.IMAP4_SSL:
         connection = imaplib.IMAP4_SSL(host, port, timeout=IMAP_TIMEOUT_SECONDS)
         connection.login(values["EMAIL_ADDRESS"], values["EMAIL_PASSWORD"])
         connection.select(mailbox)
+        return connection
+
+    try:
+        return call_with_retry(_connect, is_retryable=lambda exc: isinstance(exc, OSError))
     except (OSError, imaplib.IMAP4.error) as exc:
         raise EmailClientError(f"Echec de connexion IMAP: {exc}") from exc
-    return connection
 
 
 def fetch_unread(mailbox: str = DEFAULT_MAILBOX, max_messages: int = 10) -> list[dict]:
@@ -169,10 +175,18 @@ def send_email(to: str, subject: str, body: str) -> None:
     message["Subject"] = subject
     message.set_content(body)
 
-    try:
+    def _send() -> None:
         with smtplib.SMTP(host, port, timeout=SMTP_TIMEOUT_SECONDS) as connection:
             connection.starttls()
             connection.login(values["EMAIL_ADDRESS"], values["EMAIL_PASSWORD"])
             connection.send_message(message)
+
+    def _is_transient(exc: Exception) -> bool:
+        # smtplib.SMTPException herite d'OSError en Python 3 : sans cette
+        # exclusion, un echec d'authentification serait retente pour rien.
+        return isinstance(exc, OSError) and not isinstance(exc, smtplib.SMTPException)
+
+    try:
+        call_with_retry(_send, is_retryable=_is_transient)
     except (OSError, smtplib.SMTPException) as exc:
         raise EmailClientError(f"Echec de l'envoi de l'email: {exc}") from exc

@@ -6,6 +6,8 @@ from typing import Any, cast
 
 from dotenv import load_dotenv
 
+from src.retry import call_with_retry, is_transient_url_error
+
 load_dotenv()
 
 SEND_TIMEOUT_SECONDS = 10
@@ -46,9 +48,12 @@ def _send_payload(payload: dict) -> dict:
         },
     )
 
-    try:
+    def _do_request() -> bytes:
         with urllib.request.urlopen(request, timeout=SEND_TIMEOUT_SECONDS) as response:
-            body = response.read()
+            return response.read()
+
+    try:
+        body = call_with_retry(_do_request, is_retryable=is_transient_url_error)
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise WhatsAppError(f"Echec de l'envoi WhatsApp ({exc.code}): {detail}") from exc
