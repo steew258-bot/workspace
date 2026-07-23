@@ -4,6 +4,10 @@ Assistant IA personnel modulaire : chaque tâche du quotidien (triage, veille,
 planification) est un module avec un contrat d'entrée/sortie strict (JSON
 structuré) et un test qui vérifie sa fiabilité, comme du vrai logiciel.
 
+Premier démarrage ? Voir [GETTING_STARTED.md](GETTING_STARTED.md) pour
+une installation guidée en une dizaine de minutes. Ce document-ci est la
+référence technique complète.
+
 ## Modules
 
 - **triage** — texte libre (email, tâche, notification) → action à
