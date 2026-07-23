@@ -2,7 +2,7 @@ import json
 
 import anthropic
 
-from src.modules._client import get_client
+from src.modules._client import extract_text, get_client
 
 SYSTEM_PROMPT = """Tu es un assistant de veille. Analyse la liste d'informations fournie \
 (titres d'articles, alertes, annonces...) et reponds UNIQUEMENT avec un JSON valide, sans \
@@ -53,4 +53,4 @@ def veille(items_text: str, client: anthropic.Anthropic | None = None) -> dict:
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": items_text}],
     )
-    return _parse_response(response.content[0].text)
+    return _parse_response(extract_text(response))

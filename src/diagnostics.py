@@ -41,7 +41,7 @@ MODULE_REQUIREMENTS = {
 
 
 def _load_example_values(path: str = ENV_EXAMPLE_PATH) -> dict[str, str]:
-    values = {}
+    values: dict[str, str] = {}
     if not os.path.exists(path):
         return values
 

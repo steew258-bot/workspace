@@ -1,4 +1,5 @@
 ruff==0.15.22
+mypy==2.3.0
 pytest==9.1.1
 anthropic==0.117.0
 feedparser==6.0.11

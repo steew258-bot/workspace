@@ -265,11 +265,13 @@ les workflows fonctionnent.
 
 ```bash
 ruff check .
+mypy app.py src scripts
 pytest
 ```
 
-La CI (`.github/workflows/ci.yml`) lance ces deux commandes sur chaque
-push/PR vers `master`.
+La CI (`.github/workflows/ci.yml`) lance ces trois commandes sur chaque
+push/PR vers `master`. `test/` n'est volontairement pas passé à mypy
+(mocking intensif, peu de valeur à le typer strictement).
 
 ## Démo hors-ligne
 

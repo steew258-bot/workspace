@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+from collections.abc import Callable
 
 from src.diagnostics import check as check_environment
 from src.modules.agenda import agenda
@@ -19,7 +20,7 @@ from src.modules.whatsapp import send_whatsapp_message
 from src.notifications import notify_if_urgent
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> None:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
@@ -152,7 +153,7 @@ def main(argv=None):
             except EmailClientError as exc:
                 print(f"[email-check] echec du marquage comme lu: {exc}", file=sys.stderr)
     else:
-        handlers = {
+        handlers: dict[str, Callable[[str], dict]] = {
             "triage": triage,
             "email": email_triage,
             "veille": veille,

@@ -2,6 +2,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from typing import Any, cast
 
 from dotenv import load_dotenv
 
@@ -25,9 +26,9 @@ def _get_config() -> tuple[str, str, str]:
             "Copie .env.example en .env et renseigne ces valeurs."
         )
     return (
-        values["WHATSAPP_API_URL"],
-        values["WHATSAPP_PHONE_NUMBER_ID"],
-        values["WHATSAPP_ACCESS_TOKEN"],
+        cast(str, values["WHATSAPP_API_URL"]),
+        cast(str, values["WHATSAPP_PHONE_NUMBER_ID"]),
+        cast(str, values["WHATSAPP_ACCESS_TOKEN"]),
     )
 
 
@@ -77,7 +78,7 @@ def send_whatsapp_template(
     language_code: str = "fr",
     body_params: list[str] | None = None,
 ) -> dict:
-    template = {"name": template_name, "language": {"code": language_code}}
+    template: dict[str, Any] = {"name": template_name, "language": {"code": language_code}}
     if body_params:
         template["components"] = [
             {"type": "body", "parameters": [{"type": "text", "text": p} for p in body_params]}

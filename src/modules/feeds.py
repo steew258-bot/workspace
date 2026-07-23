@@ -17,7 +17,7 @@ def _parse_feeds_file(path: str) -> list[str]:
     return [line.strip() for line in lines if line.strip() and not line.strip().startswith("#")]
 
 
-def _fetch_feed(url_or_content: str):
+def _fetch_feed(url_or_content: str) -> feedparser.FeedParserDict:
     if url_or_content.startswith(("http://", "https://")):
         with urllib.request.urlopen(url_or_content, timeout=FETCH_TIMEOUT_SECONDS) as response:
             content = response.read()

@@ -7,6 +7,7 @@ import sys
 from email.header import decode_header
 from email.message import EmailMessage, Message
 from html import unescape
+from typing import cast
 
 from dotenv import load_dotenv
 
@@ -36,7 +37,7 @@ def _get_env(names: tuple[str, ...]) -> dict[str, str]:
             f"Variables d'environnement manquantes: {', '.join(missing)}. "
             "Copie .env.example en .env et renseigne ces valeurs."
         )
-    return values
+    return {name: cast(str, value) for name, value in values.items()}
 
 
 def _decode_header_value(raw_value: str) -> str:
@@ -60,7 +61,7 @@ def _html_to_text(html: str) -> str:
 
 def _decode_part(part: Message) -> str | None:
     payload = part.get_payload(decode=True)
-    if payload is None:
+    if not isinstance(payload, bytes):
         return None
     charset = part.get_content_charset() or "utf-8"
     return payload.decode(charset, errors="replace")
@@ -117,9 +118,10 @@ def fetch_unread(mailbox: str = DEFAULT_MAILBOX, max_messages: int = 10) -> list
         for uid in uids:
             try:
                 status, msg_data = connection.fetch(uid, "(RFC822)")
-                if status != "OK" or not msg_data or msg_data[0] is None:
+                item = msg_data[0] if msg_data else None
+                if status != "OK" or not isinstance(item, tuple) or not isinstance(item[1], bytes):
                     continue
-                raw = msg_data[0][1]
+                raw = item[1]
                 parsed = email_lib.message_from_bytes(raw)
                 messages.append(
                     {

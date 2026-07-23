@@ -4,6 +4,7 @@ import os
 import sys
 
 from flask import Flask, request
+from flask.typing import ResponseReturnValue
 
 from src.modules.triage import triage
 from src.modules.whatsapp import WhatsAppError, send_whatsapp_message
@@ -42,7 +43,7 @@ def _verify_signature(payload: bytes, signature_header: str | None) -> bool:
     return hmac.compare_digest(expected, received)
 
 
-def _extract_messages(payload) -> list[dict]:
+def _extract_messages(payload: object) -> list[dict]:
     if not isinstance(payload, dict):
         return []
 
@@ -87,18 +88,18 @@ def _handle_message(message: dict) -> None:
 
 
 @app.get("/webhook")
-def verify():
+def verify() -> ResponseReturnValue:
     mode = request.args.get("hub.mode")
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
 
     if mode == "subscribe" and token == _verify_token():
-        return challenge, 200
+        return challenge or "", 200
     return "Verification token invalide", 403
 
 
 @app.post("/webhook")
-def receive():
+def receive() -> ResponseReturnValue:
     if not _verify_signature(request.get_data(), request.headers.get("X-Hub-Signature-256")):
         return "Signature invalide", 403
 

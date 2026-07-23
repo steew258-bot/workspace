@@ -2,7 +2,7 @@ import json
 
 import anthropic
 
-from src.modules._client import get_client
+from src.modules._client import extract_text, get_client
 
 SYSTEM_PROMPT = """Tu es un assistant d'agenda. Analyse la liste d'evenements et de \
 contraintes du jour fournie et reponds UNIQUEMENT avec un JSON valide, sans aucun texte \
@@ -61,4 +61,4 @@ def agenda(text: str, client: anthropic.Anthropic | None = None) -> dict:
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": text}],
     )
-    return _parse_response(response.content[0].text)
+    return _parse_response(extract_text(response))
