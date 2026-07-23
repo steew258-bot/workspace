@@ -35,6 +35,4 @@ def is_transient_url_error(exc: Exception) -> bool:
     """Vrai pour une erreur reseau (DNS, connexion refusee, timeout), faux pour
     une reponse HTTP d'erreur (HTTPError, sous-classe de URLError) qui ne
     beneficierait pas d'un retry immediat."""
-    return isinstance(exc, urllib.error.URLError) and not isinstance(
-        exc, urllib.error.HTTPError
-    )
+    return isinstance(exc, urllib.error.URLError) and not isinstance(exc, urllib.error.HTTPError)

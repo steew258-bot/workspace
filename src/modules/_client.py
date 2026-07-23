@@ -28,9 +28,7 @@ def extract_text(response: anthropic.types.Message) -> str:
     return block.text
 
 
-def parse_json_object(
-    raw_text: str, required_keys: set[str], error_cls: type[Exception]
-) -> dict:
+def parse_json_object(raw_text: str, required_keys: set[str], error_cls: type[Exception]) -> dict:
     """Parse le JSON strict attendu de chaque module : un objet contenant au moins
     required_keys. Leve error_cls (le <Nom>Error propre au module appelant) sur
     JSON invalide, non-objet, ou champ manquant. La validation specifique a chaque

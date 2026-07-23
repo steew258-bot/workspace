@@ -193,9 +193,14 @@ def test_receive_with_valid_signature(monkeypatch, client):
     signature = hmac.new(b"app-secret", body, hashlib.sha256).hexdigest()
 
     with (
-        patch("src.webhook.triage", return_value={
-            "action": "a", "urgence": "basse", "brouillon_reponse": "b",
-        }),
+        patch(
+            "src.webhook.triage",
+            return_value={
+                "action": "a",
+                "urgence": "basse",
+                "brouillon_reponse": "b",
+            },
+        ),
         patch("src.webhook.send_whatsapp_message") as mocked_send,
     ):
         response = client.post(

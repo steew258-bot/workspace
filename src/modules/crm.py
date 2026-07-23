@@ -46,9 +46,7 @@ def crm(text: str, client: anthropic.Anthropic | None = None) -> dict:
     return _parse_response(extract_text(response))
 
 
-def crm_export_xlsx(
-    data: dict, output_path: str, client: anthropic.Anthropic | None = None
-) -> str:
+def crm_export_xlsx(data: dict, output_path: str, client: anthropic.Anthropic | None = None) -> str:
     """Genere une vraie fiche de suivi client .xlsx a partir d'une analyse deja
     structuree par crm(). Fonctionnalite beta (Agent Skills), consomme du temps
     de conteneur d'execution de code : voir `python app.py doctor`."""

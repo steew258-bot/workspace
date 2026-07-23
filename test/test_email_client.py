@@ -259,9 +259,12 @@ def test_send_email_smtp_error_raises_client_error(monkeypatch):
     monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")
     monkeypatch.setenv("EMAIL_PASSWORD", "secret")
 
-    with patch(
-        "src.modules.email_client.smtplib.SMTP", side_effect=smtplib.SMTPException("boom")
-    ) as mocked_smtp, pytest.raises(EmailClientError):
+    with (
+        patch(
+            "src.modules.email_client.smtplib.SMTP", side_effect=smtplib.SMTPException("boom")
+        ) as mocked_smtp,
+        pytest.raises(EmailClientError),
+    ):
         send_email("client@exemple.com", "Sujet", "Corps")
 
     # SMTPException herite d'OSError en Python 3 : verifie qu'on ne la retente

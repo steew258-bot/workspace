@@ -87,7 +87,7 @@ def _extract_body(message: Message) -> str:
     else:
         plain_body = _decode_part(message) or ""
 
-    body = (plain_body.strip() or _html_to_text(html_body))
+    body = plain_body.strip() or _html_to_text(html_body)
 
     if len(body) > MAX_BODY_CHARS:
         body = body[:MAX_BODY_CHARS] + "\n[...tronque...]"

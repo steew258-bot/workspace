@@ -49,9 +49,7 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
 
         if code:
             _CallbackHandler.authorization_code = code
-            self.wfile.write(
-                b"<p>Autorisation recue, tu peux revenir au terminal.</p>"
-            )
+            self.wfile.write(b"<p>Autorisation recue, tu peux revenir au terminal.</p>")
         else:
             error = params.get("error", ["inconnue"])[0]
             self.wfile.write(f"<p>Echec de l'autorisation : {error}</p>".encode())

@@ -24,11 +24,10 @@ VARS_WITH_USABLE_DEFAULTS = {
     "EMAIL_MAILBOX",
 }
 
+
 def _is_valid_email(value: str) -> bool:
     local, _, domain = value.partition("@")
-    return bool(local) and "." in domain and not domain.startswith(".") and not domain.endswith(
-        "."
-    )
+    return bool(local) and "." in domain and not domain.startswith(".") and not domain.endswith(".")
 
 
 def _is_valid_url(value: str) -> bool:

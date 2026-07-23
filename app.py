@@ -46,9 +46,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     plan_parser.add_argument("text", help="Taches et contraintes du jour")
 
-    resume_parser = subparsers.add_parser(
-        "resume", help="Resume un texte long en points cles"
-    )
+    resume_parser = subparsers.add_parser("resume", help="Resume un texte long en points cles")
     resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
     resume_parser.add_argument(
         "--export-docx",

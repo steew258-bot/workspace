@@ -114,9 +114,7 @@ def test_fetch_events_no_access_token_raises_error(monkeypatch):
     token_response = _fake_response({"error": "invalid_grant"})
 
     with (
-        patch(
-            "src.modules.calendar_client.urllib.request.urlopen", return_value=token_response
-        ),
+        patch("src.modules.calendar_client.urllib.request.urlopen", return_value=token_response),
         pytest.raises(CalendarClientError),
     ):
         fetch_events()

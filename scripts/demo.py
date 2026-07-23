@@ -62,9 +62,7 @@ DEMOS = [
     },
     {
         "module": "resume",
-        "commande": (
-            'python app.py resume "$(cat compte-rendu.txt)" --export-docx rapport.docx'
-        ),
+        "commande": ('python app.py resume "$(cat compte-rendu.txt)" --export-docx rapport.docx'),
         "sortie": {
             "resume": (
                 "Le projet avance conformement au planning ; deux points de blocage "

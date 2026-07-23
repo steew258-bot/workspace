@@ -104,9 +104,7 @@ def test_send_whatsapp_template_success(monkeypatch):
     fake_response.read.return_value = json.dumps({"messages": [{"id": "wamid.tpl"}]}).encode()
     fake_response.__enter__.return_value = fake_response
 
-    with patch(
-        "src.modules.whatsapp.urllib.request.urlopen", return_value=fake_response
-    ) as mocked:
+    with patch("src.modules.whatsapp.urllib.request.urlopen", return_value=fake_response) as mocked:
         result = send_whatsapp_template(
             "+33600000000", "notification_urgente", "fr", body_params=["Client furieux"]
         )
