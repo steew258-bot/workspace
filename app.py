@@ -4,6 +4,7 @@ import os
 import sys
 
 from src.diagnostics import check as check_environment
+from src.modules.crm import crm
 from src.modules.email import email as email_triage
 from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
 from src.modules.feeds import fetch_items_text
@@ -44,6 +45,11 @@ def main(argv=None):
         "resume", help="Resume un texte long en points cles"
     )
     resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
+
+    crm_parser = subparsers.add_parser(
+        "crm", help="Analyse des notes d'echanges client et propose statut/action/risque"
+    )
+    crm_parser.add_argument("text", help="Notes d'echanges avec le client ou prospect")
 
     recherche_parser = subparsers.add_parser(
         "recherche", help="Recherche web en temps reel via Perplexity, avec sources"
@@ -141,6 +147,7 @@ def main(argv=None):
             "planification": planification,
             "resume": resume,
             "recherche": recherche,
+            "crm": crm,
         }
         result = handlers[args.command](args.text)
         notify_if_urgent(args.command, result)

@@ -45,6 +45,12 @@ def notify_if_urgent(command: str, result: dict) -> None:
             f"- {item.get('titre', '')} ({item.get('raison', '')})" for item in items
         )
         _send(f"Veille : {len(items)} element(s) prioritaire(s)\n{lignes}")
+    elif command == "crm" and result.get("risque_churn") == "eleve":
+        _send(
+            "Risque de churn eleve\n"
+            f"Statut : {result.get('statut', '')}\n"
+            f"Action : {result.get('action', '')}"
+        )
     elif command == "email-check":
         urgents = [item for item in result.get("traites", []) if item.get("urgence") == "haute"]
         if urgents:

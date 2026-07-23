@@ -45,6 +45,16 @@ def test_main_forces_utf8_stdout_and_stderr():
         ),
         ("resume", "app.resume", {"resume": "r", "points_cles": ["a"]}),
         ("recherche", "app.recherche", {"reponse": "r", "sources": ["https://exemple.com"]}),
+        (
+            "crm",
+            "app.crm",
+            {
+                "statut": "actif",
+                "relance_a_faire": False,
+                "action": "a",
+                "risque_churn": "faible",
+            },
+        ),
     ],
 )
 def test_command_prints_json(capsys, command, target, fake_result):

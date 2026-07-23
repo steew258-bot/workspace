@@ -110,6 +110,40 @@ def test_email_basse_urgence_does_not_notify(monkeypatch):
     mocked_send.assert_not_called()
 
 
+def test_crm_risque_eleve_notifies(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "statut": "a relancer",
+        "relance_a_faire": True,
+        "action": "Rappeler avant vendredi",
+        "risque_churn": "eleve",
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("crm", result)
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "Rappeler avant vendredi" in args[1]
+
+
+def test_crm_risque_faible_does_not_notify(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "statut": "actif",
+        "relance_a_faire": False,
+        "action": "Rien a faire",
+        "risque_churn": "faible",
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("crm", result)
+
+    mocked_send.assert_not_called()
+
+
 def test_email_check_with_urgent_item_notifies(monkeypatch):
     monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
     monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
