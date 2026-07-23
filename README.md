@@ -271,6 +271,18 @@ pytest
 La CI (`.github/workflows/ci.yml`) lance ces deux commandes sur chaque
 push/PR vers `master`.
 
+## Démo hors-ligne
+
+```bash
+python scripts/demo.py
+```
+
+Rejoue chaque module avec un exemple réaliste et sa sortie JSON
+attendue, sans appeler l'API Anthropic ni nécessiter de configuration —
+utile pour se faire une idée du résultat avant même d'avoir une clé
+API. Les exemples sont vérifiés en test contre le vrai contrat de
+chaque module (`test/test_demo.py`), donc jamais mensongers.
+
 ## Packaging pour distribution
 
 ```bash
