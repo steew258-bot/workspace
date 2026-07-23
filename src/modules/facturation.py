@@ -1,0 +1,71 @@
+import json
+
+import anthropic
+
+from src.modules._client import get_client
+
+SYSTEM_PROMPT = """Tu es un assistant de facturation. Analyse la description de prestation \
+fournie et reponds UNIQUEMENT avec un JSON valide, sans aucun texte autour, au format :
+{
+  "client": "<nom du client si mentionne, sinon chaine vide>",
+  "lignes": [{"designation": "<description precise de la prestation ou du produit>", \
+"quantite": <nombre>, "prix_unitaire": <nombre ou null si non precise dans le texte>}],
+  "total_estime": <nombre ou null si au moins un prix_unitaire est null>,
+  "notes": "<hypotheses faites, informations manquantes a completer avant envoi>"
+}
+N'invente jamais de prix : si un prix n'est pas donne dans le texte, mets prix_unitaire (et \
+donc total_estime) a null et signale-le dans "notes"."""
+
+REQUIRED_KEYS = {"client", "lignes", "total_estime", "notes"}
+REQUIRED_LIGNE_KEYS = {"designation", "quantite", "prix_unitaire"}
+
+MODEL = "claude-sonnet-5"
+
+
+class FacturationError(ValueError):
+    pass
+
+
+def _is_number_or_none(value) -> bool:
+    return value is None or (isinstance(value, (int, float)) and not isinstance(value, bool))
+
+
+def _parse_response(raw_text: str) -> dict:
+    try:
+        data = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise FacturationError(f"Reponse non JSON: {raw_text!r}") from exc
+
+    if not isinstance(data, dict):
+        raise FacturationError(f"Reponse JSON invalide, objet attendu: {raw_text!r}")
+
+    missing = REQUIRED_KEYS - data.keys()
+    if missing:
+        raise FacturationError(f"Champs manquants dans la reponse: {missing}")
+
+    if not isinstance(data["lignes"], list) or not data["lignes"]:
+        raise FacturationError("'lignes' doit etre une liste non vide")
+
+    for ligne in data["lignes"]:
+        if not isinstance(ligne, dict) or REQUIRED_LIGNE_KEYS - ligne.keys():
+            raise FacturationError(f"Element 'lignes' invalide: {ligne!r}")
+        if not _is_number_or_none(ligne["quantite"]):
+            raise FacturationError(f"'quantite' invalide: {ligne['quantite']!r}")
+        if not _is_number_or_none(ligne["prix_unitaire"]):
+            raise FacturationError(f"'prix_unitaire' invalide: {ligne['prix_unitaire']!r}")
+
+    if not _is_number_or_none(data["total_estime"]):
+        raise FacturationError(f"'total_estime' invalide: {data['total_estime']!r}")
+
+    return data
+
+
+def facturation(text: str, client: anthropic.Anthropic | None = None) -> dict:
+    client = client or get_client()
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=700,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": text}],
+    )
+    return _parse_response(response.content[0].text)

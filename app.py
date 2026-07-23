@@ -8,6 +8,7 @@ from src.modules.agenda import agenda
 from src.modules.crm import crm
 from src.modules.email import email as email_triage
 from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
+from src.modules.facturation import facturation
 from src.modules.feeds import fetch_items_text
 from src.modules.planification import planification
 from src.modules.recherche import recherche
@@ -46,6 +47,11 @@ def main(argv=None):
         "resume", help="Resume un texte long en points cles"
     )
     resume_parser.add_argument("text", help="Texte long a resumer (compte-rendu, doc, emails...)")
+
+    facturation_parser = subparsers.add_parser(
+        "facturation", help="Genere un brouillon de devis structure a partir d'une description"
+    )
+    facturation_parser.add_argument("text", help="Description de la prestation ou des produits")
 
     agenda_parser = subparsers.add_parser(
         "agenda", help="Analyse evenements/contraintes du jour: conflits, creneaux, suggestions"
@@ -155,6 +161,7 @@ def main(argv=None):
             "recherche": recherche,
             "crm": crm,
             "agenda": agenda,
+            "facturation": facturation,
         }
         result = handlers[args.command](args.text)
         notify_if_urgent(args.command, result)

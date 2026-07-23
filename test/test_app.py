@@ -60,6 +60,16 @@ def test_main_forces_utf8_stdout_and_stderr():
             "app.agenda",
             {"conflits": [], "creneaux_libres": ["9h-10h"], "suggestions": []},
         ),
+        (
+            "facturation",
+            "app.facturation",
+            {
+                "client": "X",
+                "lignes": [{"designation": "A", "quantite": 1, "prix_unitaire": 10}],
+                "total_estime": 10,
+                "notes": "",
+            },
+        ),
     ],
 )
 def test_command_prints_json(capsys, command, target, fake_result):

@@ -24,6 +24,9 @@ structuré) et un test qui vérifie sa fiabilité, comme du vrai logiciel.
 - **agenda** — événements et contraintes du jour → conflits détectés,
   créneaux libres, suggestions de replanification (analyse texte ; pas
   encore connecté à un vrai calendrier)
+- **facturation** — description de prestation → brouillon de devis
+  structuré (lignes, quantités, prix) ; n'invente jamais de prix non
+  précisé dans le texte
 
 ## Prérequis
 
@@ -65,6 +68,7 @@ python app.py whatsapp +33600000000 "Message a envoyer"
 python app.py recherche "Quelles sont les dernieres annonces d'Anthropic ?"
 python app.py crm "Appel du 12/07 : interesse mais budget pas encore valide, doit revenir vers nous."
 python app.py agenda "RDV client 14h-15h ; appel fournisseur 14h30 ; dentiste 17h"
+python app.py facturation "2 jours de dev a 500e/jour pour le client Dupont"
 python app.py doctor                                            # diagnostic de la config
 ```
 
