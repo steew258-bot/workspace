@@ -93,7 +93,7 @@ def verify() -> ResponseReturnValue:
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
 
-    if mode == "subscribe" and token == _verify_token():
+    if mode == "subscribe" and hmac.compare_digest(token or "", _verify_token()):
         return challenge or "", 200
     return "Verification token invalide", 403
 
