@@ -3,6 +3,7 @@ import json
 import os
 import sys
 
+from src.diagnostics import check as check_environment
 from src.modules.email import email as email_triage
 from src.modules.email_client import EmailClientError, fetch_unread, mark_as_read, send_email
 from src.modules.feeds import fetch_items_text
@@ -82,6 +83,10 @@ def main(argv=None):
         "--port", type=int, default=8000, help="Port d'ecoute (defaut: 8000)"
     )
 
+    subparsers.add_parser(
+        "doctor", help="Diagnostique la configuration (.env) et les modules utilisables"
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "webhook":
@@ -89,6 +94,12 @@ def main(argv=None):
 
         run_webhook(port=args.port)
         return
+
+    if args.command == "doctor":
+        result = check_environment()
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        all_ok = all(m["statut"] == "ok" for m in result["modules"].values())
+        sys.exit(0 if all_ok else 1)
 
     if args.command == "veille-feeds":
         result = veille(fetch_items_text(args.feeds_file))

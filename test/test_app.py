@@ -160,6 +160,33 @@ def test_email_check_mark_as_read_failure_still_reports_and_notifies(capsys):
     assert "IMAP deconnecte" in captured.err
 
 
+def test_doctor_exits_zero_when_all_ok(capsys):
+    fake_result = {"modules": {"triage": {"statut": "ok", "problemes": {}}}, "avertissements": []}
+
+    with patch("app.check_environment", return_value=fake_result):
+        with pytest.raises(SystemExit) as exc_info:
+            main(["doctor"])
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == fake_result
+
+
+def test_doctor_exits_one_when_incomplete(capsys):
+    fake_result = {
+        "modules": {
+            "triage": {"statut": "incomplet", "problemes": {"ANTHROPIC_API_KEY": "manquante"}}
+        },
+        "avertissements": [],
+    }
+
+    with patch("app.check_environment", return_value=fake_result):
+        with pytest.raises(SystemExit) as exc_info:
+            main(["doctor"])
+
+    assert exc_info.value.code == 1
+
+
 def test_email_send_calls_smtp(capsys):
     with patch("app.send_email") as mocked_send:
         main(["email-send", "a@exemple.com", "Sujet", "Corps"])

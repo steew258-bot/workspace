@@ -58,9 +58,24 @@ python app.py email-check
 python app.py email-send client@exemple.com "Re: Urgent" "C'est note, je vous rappelle."
 python app.py whatsapp +33600000000 "Message a envoyer"
 python app.py recherche "Quelles sont les dernieres annonces d'Anthropic ?"
+python app.py doctor                                            # diagnostic de la config
 ```
 
 Chaque commande affiche un JSON structuré sur stdout.
+
+## Diagnostic (`doctor`)
+
+```bash
+python app.py doctor
+```
+
+Vérifie `.env` et indique, module par module, ce qui manque ou est
+resté à la valeur d'exemple de `.env.example` (donc pas vraiment
+configuré) — sans faire aucun appel réseau. Renvoie aussi des
+avertissements de sécurité (ex : `WHATSAPP_APP_SECRET` toujours à sa
+valeur d'exemple publique, `WHATSAPP_NOTIFY_TO` absente). Code de sortie
+`0` si tous les modules sont utilisables, `1` sinon — utilisable dans un
+script ou avant de lancer une automatisation.
 
 ## Recherche
 
