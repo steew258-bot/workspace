@@ -356,6 +356,7 @@ les workflows fonctionnent.
 
 ```bash
 ruff check .
+ruff format --check .           # verifie le style (ruff format . pour corriger)
 mypy app.py src scripts
 pytest
 pip-audit -r requirements.txt   # scanne les dependances pour des CVE connues
