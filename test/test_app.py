@@ -4,7 +4,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app import main
+from app import __version__, main
+
+
+def test_version_flag_prints_version_and_exits(capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--version"])
+
+    assert exc_info.value.code == 0
+    assert __version__ in capsys.readouterr().out
 
 
 def test_main_forces_utf8_stdout_and_stderr():

@@ -21,6 +21,8 @@ from src.modules.veille import veille
 from src.modules.whatsapp import send_whatsapp_message
 from src.notifications import notify_if_urgent
 
+__version__ = "1.0.0"
+
 
 def main(argv: list[str] | None = None) -> None:
     for stream in (sys.stdout, sys.stderr):
@@ -28,6 +30,7 @@ def main(argv: list[str] | None = None) -> None:
             stream.reconfigure(encoding="utf-8")
 
     parser = argparse.ArgumentParser(prog="ops-agent")
+    parser.add_argument("--version", action="version", version=f"ops-agent {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     triage_parser = subparsers.add_parser("triage", help="Analyse un texte et propose une action")
