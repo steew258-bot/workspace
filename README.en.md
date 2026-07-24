@@ -123,6 +123,31 @@ at its public example value, `WHATSAPP_NOTIFY_TO` missing or malformed).
 Exit code `0` if all modules are usable, `1` otherwise — usable in a
 script or before launching an automation.
 
+## Local web dashboard
+
+```bash
+python app.py dashboard              # http://127.0.0.1:8001
+python app.py dashboard --port 8080  # different port
+```
+
+A small local web interface: the same configuration status as
+`doctor`, rendered as HTML, plus a form to run any of the 9
+text-in/JSON-out modules (`triage`, `veille`, `planification`,
+`resume`, `email`, `crm`, `agenda`, `recherche`, `facturation`) and see
+the result directly in the browser — handy for a demo or occasional
+use without the command line. Proactive WhatsApp notifications fire
+normally (same rules as the WhatsApp section below).
+
+`email-check`, `agenda-check` and `veille-feeds` aren't in this form:
+they don't take free-form text as input (they read a real mailbox,
+Google Calendar, or an RSS feed file).
+
+⚠️ Listens on `127.0.0.1` only (never `0.0.0.0` like the WhatsApp
+webhook, which does need to be reachable from the internet) — no
+authentication, local use only. Stores nothing between requests (no
+history): every form submission really runs the module, including any
+API cost involved.
+
 ## Real file generation (Agent Skills)
 
 Three modules can, in addition to their usual JSON, generate a real

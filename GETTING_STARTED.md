@@ -78,6 +78,11 @@ Astuce : `facturation --export-xlsx`, `crm --export-xlsx` et `resume
 du résultat (fonctionnalité beta, détails dans `README.md`, section
 "Génération de fichiers réels").
 
+Autre astuce : `python app.py dashboard` ouvre une petite interface web
+locale (`http://127.0.0.1:8001`) pour lancer ces modules depuis un
+navigateur plutôt qu'en ligne de commande (détails dans `README.md`,
+section "Dashboard web local").
+
 Quatre intégrations demandent une configuration en plus (détails dans
 `README.md`) :
 

@@ -85,6 +85,11 @@ Tip: `facturation --export-xlsx`, `crm --export-xlsx` and `resume
 the result (beta feature, details in `README.en.md`, section "Real
 file generation").
 
+Another tip: `python app.py dashboard` opens a small local web
+interface (`http://127.0.0.1:8001`) to run these modules from a
+browser instead of the command line (details in `README.en.md`,
+section "Local web dashboard").
+
 Four integrations require extra configuration (details in
 `README.en.md`):
 

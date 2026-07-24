@@ -125,6 +125,32 @@ réseau. Renvoie aussi des avertissements de sécurité (ex :
 les modules sont utilisables, `1` sinon — utilisable dans un script ou
 avant de lancer une automatisation.
 
+## Dashboard web local
+
+```bash
+python app.py dashboard              # http://127.0.0.1:8001
+python app.py dashboard --port 8080  # autre port
+```
+
+Mini interface web locale : même statut de configuration que `doctor`,
+présenté en HTML, plus un formulaire pour lancer n'importe lequel des 9
+modules texte→JSON (`triage`, `veille`, `planification`, `resume`,
+`email`, `crm`, `agenda`, `recherche`, `facturation`) et voir le
+résultat directement dans le navigateur — utile pour une démo ou un
+usage occasionnel sans ligne de commande. Les notifications WhatsApp
+proactives se déclenchent normalement (mêmes règles que la section
+WhatsApp plus bas).
+
+`email-check`, `agenda-check` et `veille-feeds` ne sont pas dans ce
+formulaire : ils ne prennent pas un texte libre en entrée (ils lisent
+un vrai compte mail, Google Calendar, ou un fichier de flux RSS).
+
+⚠️ Écoute sur `127.0.0.1` uniquement (jamais `0.0.0.0` comme le webhook
+WhatsApp, qui doit lui être joignable depuis internet) — pas
+d'authentification, à n'utiliser qu'en local. Ne stocke rien entre deux
+requêtes (pas d'historique) : chaque appel au formulaire relance
+vraiment le module concerné, y compris son coût API éventuel.
+
 ## Génération de fichiers réels (Agent Skills)
 
 Trois modules peuvent, en plus de leur JSON habituel, générer un vrai

@@ -175,6 +175,14 @@ HELP = {
         "fr": "Port d'ecoute (defaut: 8000)",
         "en": "Listening port (default: 8000)",
     },
+    "dashboard_cmd": {
+        "fr": "Demarre le mini dashboard web local (statut + lancement de modules)",
+        "en": "Starts the mini local web dashboard (status + running modules)",
+    },
+    "dashboard_port_arg": {
+        "fr": "Port d'ecoute, localhost uniquement (defaut: 8001)",
+        "en": "Listening port, localhost only (default: 8001)",
+    },
     "doctor_cmd": {
         "fr": "Diagnostique la configuration (.env) et les modules utilisables",
         "en": "Diagnoses the configuration (.env) and usable modules",
@@ -284,6 +292,11 @@ def main(argv: list[str] | None = None) -> None:
         "--port", type=int, default=8000, help=HELP["webhook_port_arg"][lang]
     )
 
+    dashboard_parser = subparsers.add_parser("dashboard", help=HELP["dashboard_cmd"][lang])
+    dashboard_parser.add_argument(
+        "--port", type=int, default=8001, help=HELP["dashboard_port_arg"][lang]
+    )
+
     subparsers.add_parser("doctor", help=HELP["doctor_cmd"][lang])
 
     args = parser.parse_args(argv)
@@ -292,6 +305,12 @@ def main(argv: list[str] | None = None) -> None:
         from src.webhook import run as run_webhook
 
         run_webhook(port=args.port)
+        return
+
+    if args.command == "dashboard":
+        from src.dashboard import run as run_dashboard
+
+        run_dashboard(port=args.port)
         return
 
     if args.command == "doctor":
