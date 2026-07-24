@@ -19,6 +19,7 @@ un refresh token, et l'affiche pour que tu l'ajoutes a .env
 import http.server
 import json
 import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -33,6 +34,8 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 REDIRECT_PORT = 8765
 REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}/oauth2callback"
+AUTH_TIMEOUT_SECONDS = 300
+POLL_INTERVAL_SECONDS = 5
 
 
 class _CallbackHandler(http.server.BaseHTTPRequestHandler):
@@ -91,6 +94,22 @@ def _exchange_code_for_tokens(code: str, client_id: str, client_secret: str) -> 
     return json.loads(body)
 
 
+def _wait_for_authorization_code(server: http.server.HTTPServer, timeout_seconds: float) -> str:
+    server.timeout = POLL_INTERVAL_SECONDS
+    deadline = time.monotonic() + timeout_seconds
+    while _CallbackHandler.authorization_code is None:
+        server.handle_request()
+        if _CallbackHandler.authorization_code is None and time.monotonic() > deadline:
+            raise SystemExit(
+                f"Aucune autorisation recue apres {int(timeout_seconds // 60)} minutes. "
+                "Relance le script et termine le flux dans ton navigateur. Si l'appli est "
+                "en mode Test sur Google Cloud, verifie que ton compte Google est bien "
+                "ajoute comme testeur (Google Cloud Console -> Google Auth Platform -> "
+                "Audience) avant de reessayer."
+            )
+    return _CallbackHandler.authorization_code
+
+
 def run() -> None:
     client_id, client_secret = _get_client_credentials()
 
@@ -112,12 +131,9 @@ def run() -> None:
 
     server = http.server.HTTPServer(("localhost", REDIRECT_PORT), _CallbackHandler)
     print(f"En attente de l'autorisation sur {REDIRECT_URI} ...")
-    while _CallbackHandler.authorization_code is None:
-        server.handle_request()
+    code = _wait_for_authorization_code(server, AUTH_TIMEOUT_SECONDS)
 
-    tokens = _exchange_code_for_tokens(
-        _CallbackHandler.authorization_code, client_id, client_secret
-    )
+    tokens = _exchange_code_for_tokens(code, client_id, client_secret)
     refresh_token = tokens.get("refresh_token")
 
     if not refresh_token:

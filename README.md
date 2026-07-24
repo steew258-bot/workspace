@@ -202,6 +202,27 @@ python app.py agenda-check --date 2026-08-06   # une date precise
 
 `python app.py doctor` confirme quand tout est en place.
 
+#### Pièges fréquents
+
+- **Client ID vs Client Secret vs Compte de service.** Google Cloud a
+  plusieurs types d'identifiants sous "APIs & Services → Credentials" :
+  seul un **"ID client OAuth"** (étape 4) a un Client ID *et* un Client
+  Secret. Un **"Compte de service"** (souvent déjà présent dans le
+  projet pour d'autres usages, ex: une clé API Gemini) a un ID numérique
+  mais **pas** de "Client secret" — si tu ne trouves pas ce champ,
+  vérifie que tu es bien sur la page d'un client OAuth, pas d'un compte
+  de service. Le Client ID finit toujours par
+  `.apps.googleusercontent.com` ; le Client Secret commence toujours par
+  `GOCSPX-`. `python app.py doctor` vérifie ce format et te le signale
+  si tu as inversé les deux ou collé la mauvaise valeur (ex: l'URI de
+  redirection à la place du Client ID).
+- **"Utilisateurs test" a bougé.** Dans l'interface Google Cloud
+  actuelle ("Google Auth Platform"), la liste des testeurs autorisés
+  n'est plus sous "Clients" mais sous l'onglet **"Audience"** dans le
+  menu de gauche. Si l'autorisation échoue avec `Erreur 403 :
+  access_denied` ("l'appli est en cours de test"), c'est que ton compte
+  Google n'est pas encore dans cette liste — ajoute-le là.
+
 ## Email
 
 Intégration réelle avec une boîte mail (IMAP en lecture, SMTP en envoi),

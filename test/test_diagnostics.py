@@ -43,6 +43,8 @@ FORMAT_SENSITIVE_VALUES = {
     "WHATSAPP_API_URL": "https://graph.facebook.com/v20.0",
     "EMAIL_IMAP_PORT": "993",
     "EMAIL_SMTP_PORT": "587",
+    "GOOGLE_CLIENT_ID": "123456789-abc123def.apps.googleusercontent.com",
+    "GOOGLE_CLIENT_SECRET": "GOCSPX-abcdefghijklmnop",
 }
 
 
@@ -144,6 +146,46 @@ def test_check_var_port_format_invalid(monkeypatch):
 def test_check_var_port_out_of_range_invalid(monkeypatch):
     monkeypatch.setenv("EMAIL_SMTP_PORT", "99999")
     result = _check_var("EMAIL_SMTP_PORT", {})
+    assert result is not None
+    assert "format invalide" in result
+
+
+def test_check_var_google_client_id_valid(monkeypatch):
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", "123456789-abc123def.apps.googleusercontent.com")
+    assert _check_var("GOOGLE_CLIENT_ID", {}) is None
+
+
+def test_check_var_google_client_id_rejects_redirect_uri(monkeypatch):
+    # Le piege reel rencontre : coller l'URI de redirection a la place du Client ID.
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", "http://localhost:8765/oauth2callback")
+    result = _check_var("GOOGLE_CLIENT_ID", {})
+    assert result is not None
+    assert "format invalide" in result
+
+
+def test_check_var_google_client_id_rejects_service_account_id(monkeypatch):
+    # Autre piege reel : l'ID numerique d'un compte de service, pas d'un client OAuth.
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", "103780732764777710694")
+    result = _check_var("GOOGLE_CLIENT_ID", {})
+    assert result is not None
+    assert "format invalide" in result
+
+
+def test_check_var_google_client_secret_valid(monkeypatch):
+    monkeypatch.setenv("GOOGLE_CLIENT_SECRET", "GOCSPX-abcdefghijklmnop")
+    assert _check_var("GOOGLE_CLIENT_SECRET", {}) is None
+
+
+def test_check_var_google_client_secret_rejects_client_id(monkeypatch):
+    monkeypatch.setenv("GOOGLE_CLIENT_SECRET", "123456789-abc123def.apps.googleusercontent.com")
+    result = _check_var("GOOGLE_CLIENT_SECRET", {})
+    assert result is not None
+    assert "format invalide" in result
+
+
+def test_check_var_google_client_secret_rejects_url(monkeypatch):
+    monkeypatch.setenv("GOOGLE_CLIENT_SECRET", "https://console.cloud.google.com/apis/credentials")
+    result = _check_var("GOOGLE_CLIENT_SECRET", {})
     assert result is not None
     assert "format invalide" in result
 

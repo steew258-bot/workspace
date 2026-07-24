@@ -42,6 +42,19 @@ def _is_valid_e164_phone(value: str) -> bool:
     return value.startswith("+") and value[1:].isdigit() and len(value) >= 8
 
 
+def _is_valid_google_client_id(value: str) -> bool:
+    suffix = ".apps.googleusercontent.com"
+    if not value.endswith(suffix):
+        return False
+    project_number, _, rest = value[: -len(suffix)].partition("-")
+    return bool(project_number) and project_number.isdigit() and bool(rest)
+
+
+def _is_valid_google_client_secret(value: str) -> bool:
+    prefix = "GOCSPX-"
+    return value.startswith(prefix) and len(value) > len(prefix)
+
+
 # Validateurs de format optionnels, appliques en plus des verifications
 # "non vide" / "placeholder non remplace" : detecte une valeur non vide mais
 # manifestement mal saisie (email sans @, port non numerique...).
@@ -51,6 +64,17 @@ FORMAT_VALIDATORS: dict[str, tuple[Callable[[str], bool], str]] = {
     "EMAIL_IMAP_PORT": (_is_valid_port, "doit etre un numero de port valide (1-65535)"),
     "EMAIL_SMTP_PORT": (_is_valid_port, "doit etre un numero de port valide (1-65535)"),
     "WHATSAPP_NOTIFY_TO": (_is_valid_e164_phone, "doit etre au format E.164 (ex: +33600000000)"),
+    "GOOGLE_CLIENT_ID": (
+        _is_valid_google_client_id,
+        "doit finir par .apps.googleusercontent.com avec un numero de projet devant "
+        "(ex: 123456789-abc.apps.googleusercontent.com) - pas l'URI de redirection, "
+        "pas l'ID d'un compte de service",
+    ),
+    "GOOGLE_CLIENT_SECRET": (
+        _is_valid_google_client_secret,
+        "doit commencer par GOCSPX- (le Client secret d'un vrai client OAuth, "
+        "pas un ID de compte de service ni une URL)",
+    ),
 }
 
 MODULE_REQUIREMENTS = {

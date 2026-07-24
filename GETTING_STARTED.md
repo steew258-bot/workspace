@@ -78,13 +78,16 @@ Astuce : `facturation --export-xlsx`, `crm --export-xlsx` et `resume
 du résultat (fonctionnalité beta, détails dans `README.md`, section
 "Génération de fichiers réels").
 
-Trois intégrations demandent une configuration en plus (détails dans
+Quatre intégrations demandent une configuration en plus (détails dans
 `README.md`) :
 
 - **email** (lecture/envoi réels) — un compte mail avec mot de passe
   d'application
 - **whatsapp** — un compte développeur Meta / WhatsApp Cloud API
 - **recherche** — une clé API Perplexity
+- **agenda-check** — connexion OAuth à Google Calendar (gratuit, une
+  dizaine de minutes la première fois ; voir README, section Agenda,
+  "Pièges fréquents" si tu bloques sur le Client ID/Secret)
 
 `python app.py doctor` te dira exactement quelles variables il manque
 pour chacun quand tu voudras les activer.
@@ -99,6 +102,11 @@ pour chacun quand tu voudras les activer.
   Outlook...). La procédure exacte est dans `README.md`, section Email.
 - **`python` introuvable** — essaie `python3` à la place, selon ton
   système.
+- **Google Calendar : "client OAuth introuvable" ou "Erreur 403 :
+  access_denied"** — piège fréquent lors de la configuration de
+  `agenda-check` (Client ID/Secret confondus avec ceux d'un compte de
+  service, ou compte pas encore ajouté comme testeur). Détails dans
+  `README.md`, section Agenda → "Pièges fréquents".
 
 ## Une fois que tout tourne
 
