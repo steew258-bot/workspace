@@ -160,6 +160,51 @@ def test_receive_non_object_payload_does_not_crash(monkeypatch, client):
     assert response.status_code == 200
 
 
+def test_receive_missing_signature_header_when_secret_configured(monkeypatch, client):
+    monkeypatch.setenv("WHATSAPP_APP_SECRET", "app-secret")
+
+    response = client.post(
+        "/webhook",
+        data=json.dumps(_payload_with_message("33600000000", "Bonjour")),
+        content_type="application/json",
+        # pas de header X-Hub-Signature-256 du tout
+    )
+
+    assert response.status_code == 403
+
+
+def test_receive_non_dict_change_is_skipped(monkeypatch, client):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+
+    payload = {"entry": [{"changes": ["pas-un-dict"]}]}
+
+    with patch("src.webhook.send_whatsapp_message") as mocked_send:
+        response = client.post(
+            "/webhook",
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+    assert response.status_code == 200
+    mocked_send.assert_not_called()
+
+
+def test_receive_non_dict_value_is_skipped(monkeypatch, client):
+    monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
+
+    payload = {"entry": [{"changes": [{"value": "pas-un-dict"}]}]}
+
+    with patch("src.webhook.send_whatsapp_message") as mocked_send:
+        response = client.post(
+            "/webhook",
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+    assert response.status_code == 200
+    mocked_send.assert_not_called()
+
+
 def test_receive_non_dict_message_item_is_skipped(monkeypatch, client):
     monkeypatch.delenv("WHATSAPP_APP_SECRET", raising=False)
 

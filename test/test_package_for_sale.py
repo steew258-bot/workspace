@@ -8,6 +8,10 @@ def test_should_include_excludes_env_file():
     assert _should_include(Path(".env")) is False
 
 
+def test_should_include_excludes_coverage_data_file():
+    assert _should_include(Path(".coverage")) is False
+
+
 def test_should_include_excludes_pycache():
     assert _should_include(Path("src/modules/__pycache__/triage.cpython-312.pyc")) is False
 

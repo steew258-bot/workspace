@@ -1,6 +1,7 @@
 ruff==0.15.22
 mypy==2.3.0
 pytest==9.1.1
+pytest-cov==7.1.0
 anthropic==0.117.0
 feedparser==6.0.11
 python-dotenv==1.2.2

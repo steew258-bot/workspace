@@ -28,7 +28,7 @@ EXCLUDE_DIR_NAMES = {
     "factures",
 }
 
-EXCLUDE_FILE_NAMES = {".env"}
+EXCLUDE_FILE_NAMES = {".env", ".coverage"}
 EXCLUDE_SUFFIXES = {".pyc"}
 
 
