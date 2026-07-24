@@ -50,6 +50,32 @@ def test_parse_valid_json_but_not_an_object(raw):
         _parse_response(raw)
 
 
+def test_parse_valid_response_en():
+    raw = (
+        '{"summary": "The project is going well, two blockers remain.", '
+        '"key_points": ["Budget approved", "Tight deadline on lot 2"]}'
+    )
+    result = _parse_response(raw, lang="en")
+    assert result["summary"].startswith("The project is going well")
+    assert len(result["key_points"]) == 2
+
+
+def test_resume_export_docx_en_builds_prompt_without_keyerror():
+    summary_data = {
+        "summary": "The project is going well, two blockers remain.",
+        "key_points": ["Budget approved", "Tight deadline on lot 2"],
+    }
+    client = MagicMock()
+
+    with patch("src.modules.resume.generate_file_with_skill", return_value="report.docx") as mocked:
+        result = resume_export_docx(summary_data, "report.docx", client=client, lang="en")
+
+    assert result == "report.docx"
+    prompt = mocked.call_args[0][0]
+    assert "The project is going well" in prompt
+    assert "Budget approved" in prompt
+
+
 def test_resume_export_docx_builds_prompt_and_delegates_to_skill():
     synthese = {
         "resume": "Le projet avance bien, deux blocages restent a lever.",

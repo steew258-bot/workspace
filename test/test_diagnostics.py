@@ -200,3 +200,65 @@ def test_whatsapp_notify_to_invalid_format_warns(monkeypatch):
     assert any(
         "WHATSAPP_NOTIFY_TO" in w and "format invalide" in w for w in result["avertissements"]
     )
+
+
+def test_check_var_missing_en():
+    assert _check_var("FOO_VAR", {}, lang="en") == "missing"
+
+
+def test_check_var_detects_placeholder_en(monkeypatch):
+    monkeypatch.setenv("FOO_VAR", "example")
+    assert _check_var("FOO_VAR", {"FOO_VAR": "example"}, lang="en") == "example value not replaced"
+
+
+def test_check_var_format_invalid_en(monkeypatch):
+    monkeypatch.setenv("EMAIL_ADDRESS", "not-an-email")
+    result = _check_var("EMAIL_ADDRESS", {}, lang="en")
+    assert result is not None
+    assert "invalid format" in result
+
+
+def test_check_reports_all_modules_incomplete_when_nothing_configured_en(monkeypatch):
+    for var in [*ALL_TRACKED_VARS, "WHATSAPP_APP_SECRET", "WHATSAPP_NOTIFY_TO"]:
+        monkeypatch.delenv(var, raising=False)
+
+    with patch("src.diagnostics._load_example_values", return_value={}):
+        result = check(lang="en")
+
+    assert set(result["modules"].keys()) == set(MODULE_REQUIREMENTS.keys())
+    for module in result["modules"].values():
+        assert module["status"] == "incomplete"
+    assert len(result["warnings"]) == 3
+
+
+def test_check_module_ok_when_all_vars_configured_en(monkeypatch):
+    for var in ALL_TRACKED_VARS:
+        monkeypatch.setenv(var, FORMAT_SENSITIVE_VALUES.get(var, f"real-value-{var}"))
+
+    with patch("src.diagnostics._load_example_values", return_value={}):
+        result = check(lang="en")
+
+    for name, module in result["modules"].items():
+        assert module["status"] == "ok", f"{name}: {module['issues']}"
+
+
+def test_skills_cost_warning_always_present_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_APP_SECRET", "a-secret")
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+12025550123")
+
+    with patch("src.diagnostics._load_example_values", return_value={}):
+        result = check(lang="en")
+
+    assert any("export-xlsx" in w for w in result["warnings"])
+
+
+def test_check_lang_from_env_var(monkeypatch):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+    for var in [*ALL_TRACKED_VARS, "WHATSAPP_APP_SECRET", "WHATSAPP_NOTIFY_TO"]:
+        monkeypatch.delenv(var, raising=False)
+
+    with patch("src.diagnostics._load_example_values", return_value={}):
+        result = check()
+
+    assert "modules" in result
+    assert "warnings" in result

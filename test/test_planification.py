@@ -35,3 +35,14 @@ def test_parse_non_json():
 def test_parse_valid_json_but_not_an_object(raw):
     with pytest.raises(PlanificationError):
         _parse_response(raw)
+
+
+def test_parse_valid_response_en():
+    raw = (
+        '{"order": ["Reply to the urgent client", "Prepare the quote"], '
+        '"priority_task": "Reply to the urgent client", '
+        '"justification": "Direct impact on an ongoing sale"}'
+    )
+    result = _parse_response(raw, lang="en")
+    assert result["order"][0] == "Reply to the urgent client"
+    assert result["priority_task"] == "Reply to the urgent client"

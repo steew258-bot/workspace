@@ -191,6 +191,26 @@ def test_send_email_retries_transient_connection_error_then_succeeds(monkeypatch
     fake_connection.send_message.assert_called_once()
 
 
+def test_fetch_unread_parses_messages_en(monkeypatch):
+    monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.example.com")
+    monkeypatch.setenv("EMAIL_ADDRESS", "me@example.com")
+    monkeypatch.setenv("EMAIL_PASSWORD", "secret")
+
+    raw = _build_raw_email(subject="Urgent test", body="Please call back.")
+    fake_connection = MagicMock()
+    fake_connection.search.return_value = ("OK", [b"1"])
+    fake_connection.fetch.return_value = ("OK", [(b"1 (RFC822 {123}", raw)])
+
+    with patch("src.modules.email_client.imaplib.IMAP4_SSL", return_value=fake_connection):
+        messages = fetch_unread(lang="en")
+
+    assert len(messages) == 1
+    assert messages[0]["uid"] == "1"
+    assert messages[0]["from"] == "client@exemple.com"
+    assert messages[0]["subject"] == "Urgent test"
+    assert "call back" in messages[0]["body"]
+
+
 def test_mark_as_read_stores_flags(monkeypatch):
     monkeypatch.setenv("EMAIL_IMAP_HOST", "imap.exemple.com")
     monkeypatch.setenv("EMAIL_ADDRESS", "moi@exemple.com")

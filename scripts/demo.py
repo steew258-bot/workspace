@@ -3,6 +3,7 @@ sans appeler l'API Anthropic ni necessiter aucune configuration.
 
 Usage:
     python scripts/demo.py
+    OPS_AGENT_LANG=en python scripts/demo.py
 
 Les sorties affichees sont des exemples representatifs (pre-enregistres),
 pas de vrais appels reseau - utile pour montrer ce que fait chaque module
@@ -10,6 +11,14 @@ avant meme d'avoir configure une cle API.
 """
 
 import json
+import os
+
+_DEFAULT_LANG = "fr"
+
+
+def _get_lang(lang: str | None = None) -> str:
+    return lang or os.environ.get("OPS_AGENT_LANG", _DEFAULT_LANG)
+
 
 DEMOS = [
     {
@@ -178,26 +187,215 @@ DEMOS = [
     },
 ]
 
+DEMOS_EN = [
+    {
+        "module": "triage",
+        "commande": (
+            'python app.py triage "Client X is asking for a goodwill gesture before Friday"'
+        ),
+        "sortie": {
+            "action": "Call client X back before Friday with a concrete proposal",
+            "urgency": "high",
+            "reply_draft": (
+                "Hi, I understand your request and will get back to you before Friday "
+                "with a proposal."
+            ),
+        },
+    },
+    {
+        "module": "veille",
+        "commande": 'python app.py veille "$(cat docs/veille-sources.txt)"',
+        "sortie": {
+            "to_review": [
+                {
+                    "title": "Lindy raises funding and targets cross-app automation",
+                    "reason": "direct competitor, pricing positioning shift",
+                }
+            ],
+            "archived": ["Minor announcement with no direct impact"],
+        },
+    },
+    {
+        "module": "planification",
+        "commande": (
+            'python app.py planification "Reply to 3 clients, prepare a quote, '
+            'chase an unpaid invoice"'
+        ),
+        "sortie": {
+            "order": [
+                "Chase the unpaid invoice",
+                "Reply to the 3 clients",
+                "Prepare the quote",
+            ],
+            "priority_task": "Chase the unpaid invoice",
+            "justification": "Direct impact on cash flow, deadline already passed",
+        },
+    },
+    {
+        "module": "resume",
+        "commande": 'python app.py resume "$(cat report.txt)"',
+        "sortie": {
+            "summary": (
+                "The project is on track; two blocking points still need to be "
+                "resolved before delivery."
+            ),
+            "key_points": ["Budget approved", "Tight deadline on lot 2"],
+        },
+    },
+    {
+        "module": "resume",
+        "commande": ('python app.py resume "$(cat report.txt)" --export-docx report.docx'),
+        "sortie": {
+            "summary": (
+                "The project is on track; two blocking points still need to be "
+                "resolved before delivery."
+            ),
+            "key_points": ["Budget approved", "Tight deadline on lot 2"],
+            "docx_file": "report.docx",
+        },
+        "note": (
+            "--export-docx generates a real Word document via Anthropic Agent Skills "
+            "(beta feature, see `python app.py doctor`)."
+        ),
+    },
+    {
+        "module": "email",
+        "commande": (
+            'python app.py email "From: client@example.com\\nSubject: Server outage\\n\\n'
+            'The server has been down for 10 minutes."'
+        ),
+        "sortie": {
+            "urgency": "high",
+            "requires_reply": True,
+            "action": "Call the client back within the hour",
+            "reply_draft": "Hi, we're handling the incident immediately.",
+        },
+    },
+    {
+        "module": "recherche",
+        "commande": 'python app.py recherche "What are Anthropic\'s latest announcements?"',
+        "sortie": {
+            "response": "Anthropic recently announced several new models and partnerships.",
+            "sources": ["https://www.anthropic.com/news"],
+        },
+    },
+    {
+        "module": "crm",
+        "commande": (
+            'python app.py crm "Call on 07/12: interested but budget not yet '
+            'approved, will get back to us."'
+        ),
+        "sortie": {
+            "status": "needs follow-up",
+            "follow_up_needed": True,
+            "action": "Follow up by email in 5 days if no news",
+            "churn_risk": "medium",
+        },
+    },
+    {
+        "module": "crm",
+        "commande": (
+            'python app.py crm "Call on 07/12: interested but budget not yet '
+            'approved, will get back to us." --export-xlsx sheets/smith.xlsx'
+        ),
+        "sortie": {
+            "status": "needs follow-up",
+            "follow_up_needed": True,
+            "action": "Follow up by email in 5 days if no news",
+            "churn_risk": "medium",
+            "xlsx_file": "sheets/smith.xlsx",
+        },
+        "note": (
+            "--export-xlsx generates a real Excel customer follow-up sheet via "
+            "Anthropic Agent Skills (beta feature, see `python app.py doctor`)."
+        ),
+    },
+    {
+        "module": "agenda",
+        "commande": (
+            'python app.py agenda "Client meeting 2-3pm ; supplier call 2:30pm ; dentist 5pm"'
+        ),
+        "sortie": {
+            "conflicts": [
+                {
+                    "events": ["Client meeting 2-3pm", "Supplier call 2:30pm"],
+                    "reason": "direct overlap",
+                }
+            ],
+            "free_slots": ["9am-2pm", "3pm-5pm"],
+            "suggestions": ["Move the supplier call to 3:30pm"],
+        },
+    },
+    {
+        "module": "facturation",
+        "commande": 'python app.py facturation "2 days of dev at $500/day for client Smith"',
+        "sortie": {
+            "client": "Smith",
+            "line_items": [{"description": "Day of development", "quantity": 2, "unit_price": 500}],
+            "estimated_total": 1000,
+            "notes": "",
+        },
+    },
+    {
+        "module": "facturation",
+        "commande": (
+            'python app.py facturation "2 days of dev at $500/day for client Smith" '
+            "--export-xlsx invoices/smith.xlsx"
+        ),
+        "sortie": {
+            "client": "Smith",
+            "line_items": [{"description": "Day of development", "quantity": 2, "unit_price": 500}],
+            "estimated_total": 1000,
+            "notes": "",
+            "xlsx_file": "invoices/smith.xlsx",
+        },
+        "note": (
+            "--export-xlsx generates a real Excel file via Anthropic Agent Skills "
+            "(beta feature, see `python app.py doctor`)."
+        ),
+    },
+]
+
 SEPARATOR = "-" * 70
 
+_BANNER = {
+    "fr": " DEMO OPS AGENT (sorties simulees, aucun appel reseau)",
+    "en": " OPS AGENT DEMO (simulated outputs, no network calls)",
+}
+_NOTE_LABEL = {"fr": "Note : {note}", "en": "Note: {note}"}
+_CLOSING = {
+    "fr": (
+        "\nCeci est un apercu. Avec une vraie cle ANTHROPIC_API_KEY configuree\n"
+        "(voir GETTING_STARTED.md), ces commandes tournent pour de vrai sur\n"
+        "ton propre texte : `python app.py doctor` te dit ce qu'il reste a\n"
+        "configurer."
+    ),
+    "en": (
+        "\nThis is a preview. With a real ANTHROPIC_API_KEY configured\n"
+        "(see GETTING_STARTED.en.md), these commands run for real on\n"
+        "your own text: `python app.py doctor` tells you what's left to\n"
+        "configure."
+    ),
+}
 
-def run() -> None:
+
+def run(lang: str | None = None) -> None:
+    lang = _get_lang(lang)
+    demos = DEMOS if lang == "fr" else DEMOS_EN
+
     print(SEPARATOR)
-    print(" DEMO OPS AGENT (sorties simulees, aucun appel reseau)")
+    print(_BANNER[lang])
     print(SEPARATOR)
 
-    for demo in DEMOS:
+    for demo in demos:
         print(f"\n[{demo['module']}]")
         print(f"$ {demo['commande']}\n")
         print(json.dumps(demo["sortie"], ensure_ascii=False, indent=2))
         if demo.get("note"):
-            print(f"\nNote : {demo['note']}")
+            print(f"\n{_NOTE_LABEL[lang].format(note=demo['note'])}")
         print(f"\n{SEPARATOR}")
 
-    print("\nCeci est un apercu. Avec une vraie cle ANTHROPIC_API_KEY configuree")
-    print("(voir GETTING_STARTED.md), ces commandes tournent pour de vrai sur")
-    print("ton propre texte : `python app.py doctor` te dit ce qu'il reste a")
-    print("configurer.")
+    print(_CLOSING[lang])
 
 
 if __name__ == "__main__":

@@ -48,3 +48,15 @@ def test_parse_non_json():
 def test_parse_valid_json_but_not_an_object(raw):
     with pytest.raises(EmailError):
         _parse_response(raw)
+
+
+def test_parse_valid_response_en():
+    raw = (
+        '{"urgency": "high", "requires_reply": true, "action": "Call the client back", '
+        '"reply_draft": "Hello, I will call you back shortly."}'
+    )
+    result = _parse_response(raw, lang="en")
+    assert result["urgency"] == "high"
+    assert result["requires_reply"] is True
+    assert result["action"] == "Call the client back"
+    assert "reply_draft" in result

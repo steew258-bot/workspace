@@ -436,3 +436,159 @@ def test_agenda_check_with_date_argument(capsys):
         main(["agenda-check", "--date", "2026-08-06"])
 
     mocked_fetch.assert_called_once_with(day=date(2026, 8, 6))
+
+
+def test_help_text_is_english_when_lang_env_var_set(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+
+    with pytest.raises(SystemExit):
+        main(["--help"])
+
+    assert "Analyzes a text and suggests an action" in capsys.readouterr().out
+
+
+def test_help_text_is_french_by_default(capsys):
+    with pytest.raises(SystemExit):
+        main(["--help"])
+
+    assert "Analyse un texte et propose une action" in capsys.readouterr().out
+
+
+def test_agenda_check_without_events_skips_analysis_en(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+
+    with (
+        patch("app.fetch_events", return_value=[]),
+        patch("app.agenda") as mocked_agenda,
+        patch("app.notify_if_urgent") as mocked_notify,
+    ):
+        main(["agenda-check"])
+
+    mocked_agenda.assert_not_called()
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {"conflicts": [], "free_slots": [], "suggestions": []}
+    mocked_notify.assert_called_once_with("agenda", result)
+
+
+def test_doctor_exits_zero_when_all_ok_en(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+    fake_result = {"modules": {"triage": {"status": "ok", "issues": {}}}, "warnings": []}
+
+    with (
+        patch("app.check_environment", return_value=fake_result),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main(["doctor"])
+
+    assert exc_info.value.code == 0
+
+
+def test_doctor_exits_one_when_incomplete_en(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+    fake_result = {
+        "modules": {"triage": {"status": "incomplete", "issues": {"ANTHROPIC_API_KEY": "missing"}}},
+        "warnings": [],
+    }
+
+    with (
+        patch("app.check_environment", return_value=fake_result),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main(["doctor"])
+
+    assert exc_info.value.code == 1
+
+
+def test_whatsapp_dry_run_does_not_send_en(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+
+    with patch("app.send_whatsapp_message") as mocked:
+        main(["whatsapp", "+33600000000", "Hello", "--dry-run"])
+
+    mocked.assert_not_called()
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {"status": "preview", "to": "+33600000000", "message": "Hello"}
+
+
+def test_email_send_dry_run_does_not_send_en(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+
+    with patch("app.send_email") as mocked_send:
+        main(["email-send", "a@example.com", "Subject", "Body", "--dry-run"])
+
+    mocked_send.assert_not_called()
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {
+        "status": "preview",
+        "to": "a@example.com",
+        "subject": "Subject",
+        "body": "Body",
+    }
+
+
+def test_email_send_calls_smtp_en(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+
+    with patch("app.send_email") as mocked_send:
+        main(["email-send", "a@example.com", "Subject", "Body"])
+
+    mocked_send.assert_called_once_with("a@example.com", "Subject", "Body")
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {"status": "sent", "to": "a@example.com", "subject": "Subject"}
+
+
+def test_facturation_export_xlsx_flag_adds_file_path_en(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+    quote = {
+        "client": "X",
+        "line_items": [{"description": "A", "quantity": 1, "unit_price": 10}],
+        "estimated_total": 10,
+        "notes": "",
+    }
+
+    with (
+        patch("app.facturation", return_value=quote),
+        patch("app.facturation_export_xlsx", return_value="quote.xlsx") as mocked_export,
+        patch("app.notify_if_urgent"),
+    ):
+        main(["facturation", "some text", "--export-xlsx", "quote.xlsx"])
+
+    mocked_export.assert_called_once_with(quote, "quote.xlsx")
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result == {**quote, "xlsx_file": "quote.xlsx"}
+
+
+def test_email_check_processes_and_marks_read_en(monkeypatch, capsys):
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+    messages = [
+        {"uid": "1", "from": "a@example.com", "subject": "Subject 1", "body": "Body 1"},
+        {"uid": "2", "from": "b@example.com", "subject": "Subject 2", "body": "Body 2"},
+    ]
+    analyse = {
+        "urgency": "low",
+        "requires_reply": False,
+        "action": "a",
+        "reply_draft": "b",
+    }
+
+    with (
+        patch("app.fetch_unread", return_value=messages) as mocked_fetch,
+        patch("app.email_triage", return_value=analyse) as mocked_triage,
+        patch("app.mark_as_read") as mocked_mark,
+        patch("app.notify_if_urgent") as mocked_notify,
+    ):
+        main(["email-check"])
+
+    mocked_fetch.assert_called_once_with(mailbox="INBOX", max_messages=10)
+    assert mocked_triage.call_count == 2
+    mocked_mark.assert_called_once_with(["1", "2"], mailbox="INBOX")
+    mocked_notify.assert_called_once()
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert len(result["processed"]) == 2
+    assert result["processed"][0]["subject"] == "Subject 1"

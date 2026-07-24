@@ -8,6 +8,10 @@ Premier démarrage ? Voir [GETTING_STARTED.md](GETTING_STARTED.md) pour
 une installation guidée en une dizaine de minutes. Ce document-ci est la
 référence technique complète.
 
+English speaker? See [README.en.md](README.en.md) and
+[GETTING_STARTED.en.md](GETTING_STARTED.en.md) — the tool itself is
+bilingual too, see "Bilingue (fr/en)" below.
+
 ## Modules
 
 - **triage** — texte libre (email, tâche, notification) → action à
@@ -35,6 +39,24 @@ référence technique complète.
   structuré (lignes, quantités, prix) ; n'invente jamais de prix non
   précisé dans le texte. Avec `--export-xlsx`, génère en plus un vrai
   fichier Excel (voir "Génération de fichiers réels" plus bas)
+
+## Bilingue (fr/en)
+
+Toutes les sorties pilotables (prompts système envoyés à Claude, noms de
+champs JSON, aide CLI `--help`, messages `doctor`, notifications
+WhatsApp) basculent en anglais avec une seule variable d'environnement :
+
+```bash
+export OPS_AGENT_LANG=en   # ou dans .env : OPS_AGENT_LANG=en
+python app.py triage "Client X is asking for a goodwill gesture before Friday"
+```
+
+Par défaut (`OPS_AGENT_LANG` absent ou `fr`), tout reste en français —
+comportement identique à avant l'introduction de cette variable. En mode
+`en`, les noms de champs JSON changent aussi (ex : `urgence` →
+`urgency`, `brouillon_reponse` → `reply_draft`) — voir le format exact
+de chaque module dans les sections ci-dessous ou `python
+scripts/demo.py` avec `OPS_AGENT_LANG=en` pour un aperçu complet.
 
 ## Prérequis
 
@@ -413,30 +435,52 @@ uploadé tel quel sur une plateforme de vente (Gumroad...).
 
 ## Ajouter un module
 
-Chaque module suit le même contrat, dans `src/modules/<nom>.py` :
+Chaque module suit le même contrat bilingue, dans `src/modules/<nom>.py` :
 
-1. Un `SYSTEM_PROMPT` qui impose une réponse JSON stricte (liste des
-   champs attendus).
-2. `REQUIRED_KEYS` + une fonction `_parse_response(raw_text)` qui délègue
-   le parsing générique (JSON valide, objet, champs requis présents) à
-   `parse_json_object(raw_text, REQUIRED_KEYS, <Nom>Error)` dans
-   `src/modules/_client.py`, puis ajoute la validation spécifique au
-   module (types, valeurs autorisées...) et lève `<Nom>Error` sinon.
-3. Une fonction publique `<nom>(text, client=None)` qui appelle l'API et
-   passe la réponse à `_parse_response`.
-4. Un fichier `test/test_<nom>.py` qui teste `_parse_response` sur des
+1. `SYSTEM_PROMPTS: dict[str, str]` — un prompt système par langue
+   (`"fr"`/`"en"`) qui impose une réponse JSON stricte, avec les noms de
+   champs dans la langue correspondante.
+2. `REQUIRED_KEYS: dict[str, set[str]]` (+ éventuels enums genre
+   `VALID_URGENCY: dict[str, set[str]]`) — un jeu de champs/valeurs
+   valides par langue.
+3. `FIELDS: dict[str, dict[str, str]]` — **uniquement si un autre
+   fichier lit la sortie du module par nom de champ** (ex :
+   `notifications.py`, `app.py`). Clé = nom logique canonique en
+   anglais, valeur = `{"fr": "...", "en": "..."}`. Écrit à la main, pas
+   dérivé de `REQUIRED_KEYS[lang]` par un zip de deux sets (les sets ne
+   sont pas ordonnés — ce serait un bug latent).
+4. `_parse_response(raw_text: str, lang: str | None = None) -> dict` :
+   résout `lang = get_lang(lang)` (import depuis
+   `src/modules/_client.py`), délègue la partie générique (JSON valide,
+   objet, champs requis présents) à `parse_json_object(raw_text,
+   REQUIRED_KEYS[lang], <Nom>Error, lang=lang)`, puis ajoute la
+   validation spécifique au module avec les littéraux de la bonne
+   langue et lève `<Nom>Error` sinon.
+5. Fonction publique `<nom>(text, client=None, lang: str | None = None)`
+   qui résout `lang = get_lang(lang)` en premier, appelle l'API avec
+   `SYSTEM_PROMPTS[lang]`, et passe la réponse à `_parse_response`.
+6. Un fichier `test/test_<nom>.py` qui teste `_parse_response` sur des
    cas fixes (valide, champ manquant, type invalide, JSON cassé) — pas
-   d'appel réseau réel.
-5. Un enregistrement dans `app.py` (import + sous-parser argparse +
-   entrée dans le dict `handlers`) et un cas ajouté dans
-   `test/test_app.py`.
+   d'appel réseau réel. Couverture bilingue complète recommandée pour
+   les modules à validation non triviale (enums, listes imbriquées) ;
+   un test "happy path" anglais suffit pour les formes déjà couvertes
+   ailleurs (voir `test/test_client.py` pour les 3 erreurs génériques
+   testées une seule fois).
+7. Un enregistrement dans `app.py` (import + sous-parser argparse avec
+   `help=HELP["<nom>_cmd"][lang]` + entrée dans le dict `handlers`) et
+   un cas ajouté dans `test/test_app.py`. **Ne jamais passer `lang=`
+   explicitement dans l'appel au module depuis `app.py`** : chaque
+   fonction résout déjà la langue via `get_lang(None)` à partir de
+   `OPS_AGENT_LANG`, et les tests mockés vérifient l'appel exact
+   (`mocked.assert_called_once_with("texte")`, sans kwarg `lang`).
 
 Optionnel : si le module doit aussi générer un vrai fichier (Excel, Word...),
-reprendre le pattern `<nom>_export_<format>(data, output_path, client=None)`
-utilisé par `facturation`/`crm`/`resume` (voir "Génération de fichiers
-réels" plus haut), qui délègue à `generate_file_with_skill()` dans
-`src/modules/_skills.py` — pas besoin de redériver la logique d'appel aux
-Agent Skills.
+reprendre le pattern `<nom>_export_<format>(data, output_path, client=None,
+lang: str | None = None)` utilisé par `facturation`/`crm`/`resume` (voir
+"Génération de fichiers réels" plus haut), qui lit les champs de `data`
+via `FIELDS[lang]` (jamais en dur, sinon `KeyError` en mode `en`) et
+délègue à `generate_file_with_skill()` dans `src/modules/_skills.py` —
+pas besoin de redériver la logique d'appel aux Agent Skills.
 
 ## Licence
 

@@ -41,3 +41,43 @@ def test_parse_non_json():
 def test_parse_valid_json_but_not_an_object(raw):
     with pytest.raises(VeilleError):
         _parse_response(raw)
+
+
+def test_parse_valid_response_en():
+    raw = (
+        '{"to_review": [{"title": "RFP X", "reason": "deadline approaching"}], '
+        '"archived": ["Generic article", "Irrelevant announcement"]}'
+    )
+    result = _parse_response(raw, lang="en")
+    assert len(result["to_review"]) == 1
+    assert result["to_review"][0]["title"] == "RFP X"
+    assert "archived" in result
+
+
+def test_parse_missing_field_en():
+    raw = '{"to_review": []}'
+    with pytest.raises(VeilleError):
+        _parse_response(raw, lang="en")
+
+
+def test_parse_wrong_type_en():
+    raw = '{"to_review": "not a list", "archived": []}'
+    with pytest.raises(VeilleError):
+        _parse_response(raw, lang="en")
+
+
+def test_parse_invalid_item_shape_en():
+    raw = '{"to_review": [{"title": "X"}], "archived": []}'
+    with pytest.raises(VeilleError):
+        _parse_response(raw, lang="en")
+
+
+def test_parse_non_json_en():
+    with pytest.raises(VeilleError):
+        _parse_response("not json", lang="en")
+
+
+@pytest.mark.parametrize("raw", ["[]", "null", '"just a string"', "42"])
+def test_parse_valid_json_but_not_an_object_en(raw):
+    with pytest.raises(VeilleError):
+        _parse_response(raw, lang="en")

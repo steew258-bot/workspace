@@ -243,3 +243,162 @@ def test_template_default_language_is_fr(monkeypatch):
         notify_if_urgent("veille", result)
 
     assert mocked_template.call_args[0][2] == "fr"
+
+
+def test_triage_high_urgency_notifies_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {"action": "Reply", "urgency": "high", "reply_draft": "Hello"}
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("triage", result, lang="en")
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "Reply" in args[1]
+
+
+def test_triage_low_urgency_does_not_notify_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {"action": "Reply", "urgency": "low", "reply_draft": "Hello"}
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("triage", result, lang="en")
+
+    mocked_send.assert_not_called()
+
+
+def test_veille_with_items_notifies_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {"to_review": [{"title": "Incident X", "reason": "Customer impact"}], "archived": []}
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("veille", result, lang="en")
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "Incident X" in args[1]
+
+
+def test_email_high_urgency_notifies_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "urgency": "high",
+        "requires_reply": True,
+        "action": "Call back",
+        "reply_draft": "Hello",
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("email", result, lang="en")
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "Call back" in args[1]
+
+
+def test_crm_high_churn_risk_notifies_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "status": "needs follow-up",
+        "follow_up_needed": True,
+        "action": "Call back before Friday",
+        "churn_risk": "high",
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("crm", result, lang="en")
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "Call back before Friday" in args[1]
+
+
+def test_crm_low_churn_risk_does_not_notify_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "status": "active",
+        "follow_up_needed": False,
+        "action": "Nothing to do",
+        "churn_risk": "low",
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("crm", result, lang="en")
+
+    mocked_send.assert_not_called()
+
+
+def test_agenda_with_conflicts_notifies_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "conflicts": [{"events": ["Client meeting 2pm", "Call 2pm"], "reason": "same time slot"}],
+        "free_slots": [],
+        "suggestions": [],
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("agenda", result, lang="en")
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "Client meeting 2pm" in args[1]
+
+
+def test_agenda_without_conflicts_does_not_notify_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {"conflicts": [], "free_slots": ["9am-10am"], "suggestions": []}
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("agenda", result, lang="en")
+
+    mocked_send.assert_not_called()
+
+
+def test_email_check_with_urgent_item_notifies_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {
+        "processed": [
+            {"from": "client@example.com", "subject": "Urgent", "urgency": "high"},
+            {"from": "other@example.com", "subject": "Info", "urgency": "low"},
+        ]
+    }
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("email-check", result, lang="en")
+
+    mocked_send.assert_called_once()
+    args, _ = mocked_send.call_args
+    assert "Urgent" in args[1]
+    assert "client@example.com" in args[1]
+
+
+def test_email_check_without_urgent_item_does_not_notify_en(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+
+    result = {"processed": [{"from": "other@example.com", "subject": "Info", "urgency": "low"}]}
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("email-check", result, lang="en")
+
+    mocked_send.assert_not_called()
+
+
+def test_notify_lang_from_env_var(monkeypatch):
+    monkeypatch.setenv("WHATSAPP_NOTIFY_TO", "+33600000000")
+    monkeypatch.delenv("WHATSAPP_NOTIFY_TEMPLATE", raising=False)
+    monkeypatch.setenv("OPS_AGENT_LANG", "en")
+
+    result = {"action": "Reply", "urgency": "high", "reply_draft": "Hello"}
+    with patch("src.notifications.send_whatsapp_message") as mocked_send:
+        notify_if_urgent("triage", result)
+
+    mocked_send.assert_called_once()
